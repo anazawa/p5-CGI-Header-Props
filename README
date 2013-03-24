@@ -47,14 +47,94 @@ VERSION
 DESCRIPTION
     This module helps you handle CGI.pm-compatible HTTP header properties.
 
+    Unlike CGI::Header, you need to manipulate the header properties
+    directly.
+
 METHODS
-    new
-    header
-    handler
-    query
-    rehash
+    $props->new
+    $props->header
+        Returns the header hash associated with this "CGI::Header::Props"
+        object.
+
+    $props->query
+        Returns the query object associated with this "CGI::Header::Props"
+        object. This attribute defaults to the Singleton instance of CGI.pm
+        ($CGI::Q).
+
+    $props->handler
+        Works like CGI::Application's "header_type()" method. This method
+        can be used to declare that you are setting a redirection header.
+        This attribute defaults to "header".
+
+          $props->handler('redirect');
+          $props->as_string; # invokes $props->query->redirect
+
+    $props->rehash
+        Rebuilds the header hash to normalize property names without
+        changing the reference. Returns this object itself. If property
+        names aren't normalized, the methods listed below won't work as you
+        expect.
+
+          my $h1 = $props->header;
+          # => {
+          #      '-content_type'   => 'text/plain',
+          #      'Set-Cookie'      => 'ID=123456; path=/',
+          #      'expires'         => '+3d',
+          #      '-target'         => 'ResultsWindow',
+          #      '-content-length' => '3002',
+          # }
+
+          $props->rehash;
+
+          my $h2 = $props->header; # same reference as $h1
+          # => {
+          #      '-type'           => 'text/plain',
+          #      '-cookie'         => 'ID=123456; path=/',
+          #      '-expires'        => '+3d',
+          #      '-target'         => 'ResultsWindow',
+          #      '-content-length' => '3002',
+          # }
+
+        Normalized property names are:
+
+        1. lowercased
+              'Content-Length' -> 'content-length'
+
+        2. start with a dash
+              'content-length' -> '-content-length'
+
+        3. use underscores instead of dashes except for the first character
+              'content-length' -> '-content_length'
+
+        CGI.pm's "header()" also accepts aliases of property names. This
+        module converts them as follows:
+
+          # for CGI#header
+          '-content_type'  -> '-type'
+          '-cookies'       -> '-cookie'
+          '-set_cookie'    -> '-cookie'
+          '-window_target' -> '-target'
+
+          # for CGI#redirect
+          '-content_type'  -> '-type'
+          '-cookies'       -> '-cookie'
+          '-set_cookie'    -> '-cookie'
+          '-uri'           -> '-location'
+          '-url'           -> '-location'
+          '-window_target' -> '-target'
+
+        If a property name is duplicated, throws an exception:
+
+          $props->header;
+          # => {
+          #     -Type        => 'text/plain',
+          #     Content_Type => 'text/html',
+          # }
+
+          $props->rehash; # die "Property "-type' already exists"
+
     $value = $props->get( $prop )
-    $value = $props->set( $prop => $value )
+    $props->set( $prop => $value )
         Get or set the value of the header property. The property name
         ($prop) is not case sensitive. You can use dashes as a replacement
         for underscores in property names.
@@ -87,7 +167,7 @@ METHODS
           }
 
     $self = $props->clear
-        This will remove all header properties.
+        This will remove all header properties. Returns this object itself.
 
     @tags = $props->p3p
     $props->p3p( @tags )

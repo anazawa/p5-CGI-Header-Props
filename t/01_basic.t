@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 37;
+use Test::More tests => 36;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -73,7 +73,7 @@ is_deeply $props->rehash->header, {
     -target  => 'ResultsWindow',
 };
 
-is $props->set( -foo => 'bar' ), 'bar';
+$props->set( -foo => 'bar' );
 is $props->get('-foo'), 'bar';
 ok $props->exists('-foo');
 is $props->delete('-foo'), 'bar';

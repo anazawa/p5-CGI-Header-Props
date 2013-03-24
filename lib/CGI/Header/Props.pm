@@ -30,8 +30,8 @@ sub time2str {
 
 sub new {
     my $class   = shift;
-    my %args    = ref $_[0] eq 'HASH' ? ( header => $_[0] ) : @_;
-    my $handler = lc( $args{handler} || 'header' );
+    my %args    = @_;
+    my $handler = $args{handler} || 'header';
 
     if ( $handler ne 'header' and $handler ne 'redirect' ) {
         croak "Invalid handler '$handler' passed to new()";
@@ -39,7 +39,7 @@ sub new {
 
     my %self = (
         handler => $handler,
-        header  => $args{header}  || {},
+        header  => $args{header} || {},
         query   => $args{query},
     );
 
@@ -50,7 +50,7 @@ sub handler {
     my $self = shift;
 
     if ( @_ ) {
-        my $handler = lc shift;
+        my $handler = shift;
 
         if ( $handler ne 'header' and $handler ne 'redirect' ) {
             croak "Invalid handler '$handler' passed to handler()";
@@ -103,14 +103,14 @@ sub rehash {
 
 sub get {
     my $self = shift;
-    my $prop = $self->normalize( shift );
-    $self->{header}->{$prop};
+    my @props = map { $self->normalize($_) } @_;
+    @{ $self->{header} }{ @props };
 }
 
 sub set {
-    my $self = shift;
-    my $prop = $self->normalize( shift );
-    $self->{header}->{$prop} = shift;
+    my ( $self, %props ) = @_;
+    my @props = map { $self->normalize($_) } keys %props;
+    @{ $self->{header} }{ @props } = values %props;
 }
 
 sub exists {
@@ -121,8 +121,8 @@ sub exists {
 
 sub delete {
     my $self = shift;
-    my $prop = $self->normalize( shift );
-    delete $self->{header}->{$prop};
+    my @props = map { $self->normalize($_) } @_;
+    delete @{ $self->{header} }{ @props };
 }
 
 sub push_cookie {
@@ -362,23 +362,108 @@ This document refers to CGI::Header::Props version 0.01;
 
 This module helps you handle CGI.pm-compatible HTTP header properties.
 
+Unlike L<CGI::Header>, you need to manipulate the header properties
+directly.
+
 =head1 METHODS
 
 =over 4
 
-=item new
+=item $props->new
 
-=item header 
+=item $props->header 
 
-=item handler
+Returns the header hash associated with this C<CGI::Header::Props>
+object.
 
-=item query
+=item $props->query
 
-=item rehash
+Returns the query object associated with this C<CGI::Header::Props> object.
+This attribute defaults to the Singleton instance of CGI.pm (C<$CGI::Q>).
+
+=item $props->handler
+
+Works like L<CGI::Application>'s C<header_type()> method.
+This method can be used to declare that you are setting a redirection
+header. This attribute defaults to C<header>.
+
+  $props->handler('redirect');
+  $props->as_string; # invokes $props->query->redirect
+
+=item $props->rehash
+
+Rebuilds the header hash to normalize property names without changing
+the reference. Returns this object itself. If property names aren't
+normalized, the methods listed below won't work as you expect.
+
+  my $h1 = $props->header;
+  # => {
+  #      '-content_type'   => 'text/plain',
+  #      'Set-Cookie'      => 'ID=123456; path=/',
+  #      'expires'         => '+3d',
+  #      '-target'         => 'ResultsWindow',
+  #      '-content-length' => '3002',
+  # }
+
+  $props->rehash;
+
+  my $h2 = $props->header; # same reference as $h1
+  # => {
+  #      '-type'           => 'text/plain',
+  #      '-cookie'         => 'ID=123456; path=/',
+  #      '-expires'        => '+3d',
+  #      '-target'         => 'ResultsWindow',
+  #      '-content-length' => '3002',
+  # }
+
+Normalized property names are:
+
+=over 4
+
+=item 1. lowercased
+
+  'Content-Length' -> 'content-length'
+
+=item 2. start with a dash
+
+  'content-length' -> '-content-length'
+
+=item 3. use underscores instead of dashes except for the first character
+
+  'content-length' -> '-content_length'
+
+=back
+
+CGI.pm's C<header()> also accepts aliases of property names.
+This module converts them as follows:
+
+  # for CGI#header
+  '-content_type'  -> '-type'
+  '-cookies'       -> '-cookie'
+  '-set_cookie'    -> '-cookie'
+  '-window_target' -> '-target'
+
+  # for CGI#redirect
+  '-content_type'  -> '-type'
+  '-cookies'       -> '-cookie'
+  '-set_cookie'    -> '-cookie'
+  '-uri'           -> '-location'
+  '-url'           -> '-location'
+  '-window_target' -> '-target'
+
+If a property name is duplicated, throws an exception:
+
+  $props->header;
+  # => {
+  #     -Type        => 'text/plain',
+  #     Content_Type => 'text/html',
+  # }
+
+  $props->rehash; # die "Property "-type' already exists"
 
 =item $value = $props->get( $prop )
 
-=item $value = $props->set( $prop => $value )
+=item $props->set( $prop => $value )
 
 Get or set the value of the header property.
 The property name (C<$prop>) is not case sensitive.
@@ -413,7 +498,7 @@ Returns a Boolean value telling whether the specified property exists.
 
 =item $self = $props->clear
 
-This will remove all header properties.
+This will remove all header properties. Returns this object itself.
 
 =item @tags = $props->p3p
 
