@@ -1,0 +1,160 @@
+NAME
+    CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
+
+SYNOPSIS
+      use CGI;
+      use CGI::Header::Props;
+
+      my $query = CGI->new;
+
+      # CGI.pm-compatibe HTTP header properties
+      my $header = {
+          -type    => 'text/html',
+          -charset => 'utf-8'
+      };
+
+      my $props = CGI::Header::Props->new(
+          query   => $query,
+          handler => 'header', # or 'redirect'
+          header  => $header
+      );
+
+      # inspect $header
+      $props->header_get('-type'); # => "text/plain"
+      $props->header_exists('-type'); # => true
+
+      # update $header 
+      $props->header_set( -type => 'text/plain' ); # overwrite
+      $props->header_delete('-type'); # => "text/plain"
+      $props->header_clear; # => $self
+
+      $props->handler('redirect'); # or $props->header_type('redirect')
+      $props->as_string; # invokes $query->redirect
+
+      my @headers = $props->flatten; # => ( "Content-Type", "text/html", ... )
+
+      # works like CGI::Application#header_props
+      my @header_props = $props->header_props;
+      $props->header_props( -type => 'text/plain', ... );
+
+      # convenience methods
+      $props->p3p(qw/CAO DSP LAW CURa/);
+      $props->expires('+3d');
+      $props->nph(1);
+      $props->push_cookie( @cookies ); # @cookies are CGI::Cookie objects
+
+      $props->header; # same reference as $header
+
+VERSION
+    This document refers to CGI::Header::Props version 0.01;
+
+DESCRIPTION
+    This module helps you handle CGI.pm-compatible HTTP header properties.
+
+METHODS
+    new
+    header
+    handler
+    query
+    header_rehash
+    header_props
+    $value = $props->header_get( $prop )
+    $value = $props->header_set( $prop => $value )
+        Get or set the value of the header property. The property name
+        ($prop) is not case sensitive. You can use dashes as a replacement
+        for underscores in property names.
+
+          $props->header_get('-content_length');
+          $props->header_get('Content-Length');
+
+        The $value argument may be a plain string or a reference to an array
+        of CGI::Cookie objects for the "-cookie" property:
+
+          $props->header_set( 'Content-Length' => 3002 );
+          my $length = $props->header_get('Content-Length'); # => 3002
+
+          # $cookie1 and $cookie2 are CGI::Cookie objects
+          $props->header_set( -cookie => [$cookie1, $cookie2] );
+          my $cookies = $props->header_get('-cookie'); # => [$cookie1, $cookie2]
+
+    $value = $props->header_delete( $prop )
+        Deletes the specified property. Returns the value of the deleted
+        property.
+
+          my $value = $props->header_delete('-content_disposition'); # => "inline"
+
+    $bool = $props->header_exists( $prop )
+        Returns a Boolean value telling whether the specified property
+        exists.
+
+          if ( $props->header_exists('-etag') ) {
+              ...
+          }
+
+    $self = $props->header_clear
+        This will remove all header properties. It's identical to:
+
+          $props->header_props({});
+
+    @tags = $props->p3p
+    $props->p3p( @tags )
+        Represents P3P tags. The parameter can be an array or a
+        space-delimited string. Returns a list of P3P tags. (In scalar
+        context, returns the number of P3P tags.)
+
+          $props->p3p(qw/CAO DSP LAW CURa/);
+          # or
+          $props->p3p('CAO DSP LAW CURa');
+
+          my @tags = $props->p3p; # => ("CAO", "DSP", "LAW", "CURa")
+          my $size = $props->p3p; # => 4
+
+        In this case, the outgoing header will be formatted as:
+
+          P3P: policyref="/w3c/p3p.xml", CP="CAO DSP LAW CURa"
+
+    $props->expires
+        The Expires header gives the date and time after which the entity
+        should be considered stale. You can specify an absolute or relative
+        expiration interval. The following forms are all valid for this
+        field:
+
+          $props->expires('+30s'); # 30 seconds from now
+          $props->expires('+10m'); # ten minutes from now
+          $props->expires( '+1h'); # one hour from now
+          $props->expires( 'now'); # immediately
+          $props->expires( '+3M'); # in three months
+          $props->expires('+10y'); # in ten years time
+
+          # at the indicated time & date
+          $props->expires('Thu, 25 Apr 1999 00:40:33 GMT');
+
+    $props->attachment
+        Can be used to turn the page into an attachment. Represents
+        suggested name for the saved file.
+
+          $props->attachment('genome.jpg');
+          my $filename = $props->attachment; # => "genome.jpg"
+
+        In this case, the outgoing header will be formatted as:
+
+          Content-Disposition: attachment; filename="genome.jpg"
+
+    nph If set to a true value, will issue the correct headers to work with
+        a NPH (no-parse-header) script.
+
+    push_cookie
+    as_string
+    flatten
+        Returns pairs of fields and values.
+
+SEE ALSO
+    CGI::Application, CGI
+
+AUTHOR
+    Ryo Anazawa (anazawa@cpan.org)
+
+LICENSE
+    This module is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself. See perlartistic.
+
