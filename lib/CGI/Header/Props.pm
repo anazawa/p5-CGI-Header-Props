@@ -6,7 +6,7 @@ use Carp qw/croak/;
 
 our $VERSION = '0.01';
 
-my %PROPERTY_ALIAS = (
+our %ALIAS = (
     header => {
         -content_type  => '-type',
         -cookies       => '-cookie',
@@ -30,7 +30,19 @@ sub time2str {
 
 sub new {
     my $class = shift;
-    bless { @_ }, $class;
+    my %args  = ref $_[0] eq 'HASH' ? ( header => $_[0] ) : @_;
+
+    my %self = (
+        handler => $args{handler} || 'header',
+        header  => $args{header}  || {},
+        query   => $args{query},
+    );
+
+    bless \%self, $class;
+}
+
+sub handler {
+    $_[0]->{handler};
 }
 
 sub header {
@@ -47,47 +59,19 @@ sub _build_query {
     CGI::self_or_default();
 }
 
-sub handler {
-    my $self = shift;
-
-    if ( @_ ) {
-        my $handler = lc shift;
-
-        if ( $handler ne 'header' and $handler ne 'redirect' ) {
-            croak "Invalid handler '$handler' passed to handler()";
-        }
-        elsif ( $handler ne $self->{handler} ) {
-            $self->{handler} = $handler;
-            $self->header_rehash if $handler eq 'redirect';
-        }
-        else {
-            # do nothing
-        }
-
-        return $handler;
-    }
-
-    $self->{handler};
-}
-
-sub header_type {
-    my $self = shift;
-    $self->handler(@_);
-}
-
-sub normalize_property_name {
+sub normalize {
     my $self = shift;
     my $prop = _lc( shift );
     my $handler = $self->{handler};
-    $PROPERTY_ALIAS{$handler}{$prop} || $prop;
+    $ALIAS{$handler}{$prop} || $prop;
 }
 
-sub header_rehash {
+sub rehash {
     my $self   = shift;
     my $header = $self->{header};
 
     for my $key ( keys %{$header} ) {
-        my $prop = $self->normalize_property_name( $key );
+        my $prop = $self->normalize( $key );
         next if $key eq $prop; # $key is normalized
         croak "Property '$prop' already exists" if exists $header->{$prop};
         $header->{$prop} = delete $header->{$key}; # rename $key to $prop
@@ -96,58 +80,108 @@ sub header_rehash {
     $self;
 }
 
-sub header_props {
+sub get {
     my $self = shift;
-
-    if ( @_ ) {
-        if ( ref $_[0] eq 'HASH' ) {
-            $self->header_clear;
-            while ( my ($key, $value) = each %{$_[0]} ) {
-                $self->header_set( $key => $value );
-            }
-        }
-        elsif ( @_ % 2 == 0 ) {
-            $self->header_clear;
-            while ( my ($key, $value) = splice @_, 0, 2 ) {
-                $self->header_set( $key => $value );
-            }
-        }
-        else {
-            croak 'Odd number of elements passed to header_props()';
-        }
-    }
-
-    %{ $self->{header} };
-}
-
-sub header_get {
-    my $self = shift;
-    my $prop = $self->normalize_property_name( shift );
+    my $prop = $self->normalize( shift );
     $self->{header}->{$prop};
 }
 
-sub header_set {
+sub set {
     my $self = shift;
-    my $prop = $self->normalize_property_name( shift );
+    my $prop = $self->normalize( shift );
     $self->{header}->{$prop} = shift;
 }
 
-sub header_exists {
+sub exists {
     my $self = shift;
-    my $prop = $self->normalize_property_name( shift );
+    my $prop = $self->normalize( shift );
     exists $self->{header}->{$prop};
 }
 
-sub header_delete {
+sub delete {
     my $self = shift;
-    my $prop = $self->normalize_property_name( shift );
+    my $prop = $self->normalize( shift );
     delete $self->{header}->{$prop};
 }
 
-sub header_clear {
+sub push_cookie {
+    my $self = shift;
+    $self->_push( '-cookie', @_ );
+}
+
+sub push_p3p {
+    my $self = shift;
+    $self->_push( '-p3p', @_ );
+}
+
+sub _push {
+    my $self   = shift;
+    my $prop   = shift;
+    my @values = ref $_[0] eq 'ARRAY' ? @{ $_[0] } : @_;
+    my $header = $self->{header};
+
+    if ( my $value = $header->{$prop} ) {
+        return push @{$value}, @values if ref $value eq 'ARRAY';
+        unshift @values, $value;
+    }
+
+    $header->{$prop} = @values > 1 ? \@values : $values[0];
+
+    scalar @values;
+}
+
+sub clear {
     my $self = shift;
     %{ $self->{header} } = ();
     $self;
+}
+
+sub attachment {
+    my $self   = shift;
+    my $header = $self->{header};
+
+    if ( @_ ) {
+        my $attachment = shift;
+        delete $header->{-content_disposition} if $attachment;
+        return $header->{-attachment} = $attachment;
+    }
+
+    $header->{-attachment};
+}
+
+sub charset {
+    my $self = shift;
+    my $charset = $self->{header}->{-charset};
+    defined $charset ? $charset : $self->query->charset;
+}
+
+sub cookie {
+    my $self = shift;
+    my $header = $self->{header};
+
+    if ( @_ ) {
+        my $cookie = @_ > 1 ? [ @_ ] : shift;
+        delete $header->{-date} if $cookie;
+        return $header->{-cookie} = $cookie;
+    }
+    elsif ( my $cookie = $header->{-cookie} ) {
+        return ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
+    }
+
+    return;
+}
+
+sub expires {
+    my $self   = shift;
+    my $header = $self->{header};
+
+    if ( @_ ) {
+        my $expires = shift;
+        delete $header->{-date} if $expires;
+        return $header->{-expires} = $expires;
+    }
+
+    $header->{-expires};
 }
 
 sub nph {
@@ -165,59 +199,18 @@ sub nph {
     $NPH or $header->{-nph};
 }
 
-sub attachment {
-    my $self   = shift;
-    my $header = $self->{header};
-
-    if ( @_ ) {
-        my $value = shift;
-        delete $header->{-content_disposition} if $value;
-        return $header->{-attachment} = $value;
-    }
-
-    $header->{-attachment};
-}
-
-sub expires {
-    my $self   = shift;
-    my $header = $self->{header};
-
-    if ( @_ ) {
-        my $value = shift;
-        delete $header->{-date} if $value;
-        return $header->{-expires} = $value;
-    }
-
-    $header->{-expires};
-}
-
 sub p3p {
     my $self   = shift;
     my $header = $self->{header};
 
     if ( @_ ) {
-        $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
+        return $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
     }
     elsif ( my $tags = $header->{-p3p} ) {
         return ref $tags eq 'ARRAY' ? @{$tags} : split ' ', $tags;
     }
 
     return;
-}
-
-sub push_cookie {
-    my $self    = shift;
-    my @cookies = ref $_[0] eq 'ARRAY' ? @{ $_[0] } : @_;
-    my $header  = $self->{header};
-
-    if ( my $cookie = $header->{-cookie} ) {
-        return push @{$cookie}, @cookies if ref $cookie eq 'ARRAY';
-        unshift @cookies, $cookie;
-    }
-
-    $header->{-cookie} = @cookies > 1 ? \@cookies : $cookies[0];
-
-    scalar @cookies;
 }
 
 sub flatten {
@@ -227,9 +220,9 @@ sub flatten {
     my $nph    = delete $header{-nph} || $query->nph;
 
     if ( $self->{handler} eq 'redirect' ) {
-        $header{-type} = q{} if !exists $header{-type};
-        $header{-status} = '302 Found' if !defined $header{-status};
         $header{-location} ||= $query->self_url;
+        $header{-status} = '302 Found' if !defined $header{-status};
+        $header{-type} = q{} if !exists $header{-type};
     }
 
     my @headers;

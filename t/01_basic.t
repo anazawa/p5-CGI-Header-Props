@@ -2,9 +2,9 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 33;
+use Test::More tests => 34;
 
-my $h = CGI::Header::Props->new(
+my $props = CGI::Header::Props->new(
     query => CGI->new,
     handler => 'header',
     header => {
@@ -13,26 +13,26 @@ my $h = CGI::Header::Props->new(
     },
 );
 
-isa_ok $h, 'CGI::Header::Props';
+isa_ok $props, 'CGI::Header::Props';
 
 # class methods
-can_ok $h, qw( new normalize_property_name );
+can_ok $props, qw( new normalize );
 
 # attributes
-can_ok $h, qw( header query _build_query handler );
+can_ok $props, qw( header query _build_query handler );
 
 # properties
-can_ok $h, qw( p3p nph expires attachment );
+can_ok $props, qw( p3p nph expires attachment );
 
 # operators
-can_ok $h, qw( header_get header_set header_delete header_exists );
+can_ok $props, qw( get set delete exists );
 
 # etc.
-can_ok $h, qw( flatten as_string header_rehash );
+can_ok $props, qw( flatten as_string rehash );
 
-isa_ok $h->query, 'CGI';
-isa_ok $h->header, 'HASH';
-is $h->handler, 'header';
+isa_ok $props->query, 'CGI';
+isa_ok $props->header, 'HASH';
+is $props->handler, 'header';
 
 my @data = (
     '-foo'           => '-foo',
@@ -46,15 +46,15 @@ my @data = (
 );
 
 while ( my ($input, $expected) = splice @data, 0, 2 ) {
-    is $h->normalize_property_name($input), $expected;
+    is $props->normalize($input), $expected;
 }
 
-$h->handler('redirect');
-is $h->handler, 'redirect';
+#$props->handler('redirect');
+#is $props->handler, 'redirect';
 
-throws_ok { $h->handler('param') } qr{Invalid handler};
+#throws_ok { $props->handler('param') } qr{Invalid handler};
 
-%{ $h->header } = (
+%{ $props->header } = (
     '-Charset'      => 'utf-8',
     '-content_type' => 'text/plain',
     'Set-Cookie'    => 'ID=123456; path=/',
@@ -63,8 +63,7 @@ throws_ok { $h->handler('param') } qr{Invalid handler};
     'foo-bar'       => 'baz',
     'window_target' => 'ResultsWindow',
 );
-
-is_deeply $h->header_rehash->header, {
+is_deeply $props->rehash->header, {
     -type    => 'text/plain',
     -charset => 'utf-8',
     -cookie  => 'ID=123456; path=/',
@@ -74,35 +73,43 @@ is_deeply $h->header_rehash->header, {
     -target  => 'ResultsWindow',
 };
 
-is $h->header_set( -foo => 'bar' ), 'bar';
-is $h->header_get('-foo'), 'bar';
-ok $h->header_exists('-foo');
-is $h->header_delete('-foo'), 'bar';
+is $props->set( -foo => 'bar' ), 'bar';
+is $props->get('-foo'), 'bar';
+ok $props->exists('-foo');
+is $props->delete('-foo'), 'bar';
 
-$h->header_props( -type => 'text/plain', -charset => 'utf-8' );
-is_deeply +{$h->header_props}, { -type => 'text/plain', -charset => 'utf-8' };
-
-$h->header_props({});
-is_deeply $h->header, {};
-
-throws_ok { $h->header_props('-type') } qr{Odd number of elements};
-
-$h->header_clear->handler('header');
-
-is $h->as_string,
-    "Content-Type: text/html; charset=ISO-8859-1$CGI::CRLF$CGI::CRLF";
-
-is_deeply [ $h->flatten ],
+#$props->clear->handler('header');
+is_deeply [ $props->clear->flatten ],
     [ 'Content-Type', 'text/html; charset=ISO-8859-1' ];
 
-$h->p3p(qw/CAO DSP LAW CURa/);
-is_deeply [$h->p3p], [qw/CAO DSP LAW CURa/];
+#$props->handler('redirect');
+#is_deeply [ $props->flatten ], [
+#    'Status', '302 Found',
+#    'Location', 'http://localhost',
+#];
 
-$h->nph(1);
-ok $h->nph;
+$props->p3p(qw/CAO DSP LAW CURa/);
+is_deeply [$props->p3p], [qw/CAO DSP LAW CURa/];
 
-$h->expires('+3d');
-is $h->expires, '+3d';
+$props->nph(1);
+ok $props->nph;
 
-$h->attachment('genome.jpg');
-is $h->attachment, 'genome.jpg';
+$props->expires('+3d');
+is $props->expires, '+3d';
+
+$props->attachment('genome.jpg');
+is $props->attachment, 'genome.jpg';
+
+is $props->push_cookie(qw/foo/), 1;
+is $props->header->{-cookie}, 'foo';
+is $props->push_cookie(qw/bar baz/), 3;
+is_deeply $props->header->{-cookie}, [qw/foo bar baz/];
+
+$props->delete('-charset');
+is $props->charset, 'ISO-8859-1';
+
+$props->set( -charset => 'utf-8' );
+is $props->charset, 'utf-8';
+
+$props->set( -charset => q{} );
+is $props->charset, q{};
