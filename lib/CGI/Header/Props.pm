@@ -29,11 +29,16 @@ sub time2str {
 }
 
 sub new {
-    my $class = shift;
-    my %args  = ref $_[0] eq 'HASH' ? ( header => $_[0] ) : @_;
+    my $class   = shift;
+    my %args    = ref $_[0] eq 'HASH' ? ( header => $_[0] ) : @_;
+    my $handler = lc( $args{handler} || 'header' );
+
+    if ( $handler ne 'header' and $handler ne 'redirect' ) {
+        croak "Invalid handler '$handler' passed to new()";
+    }
 
     my %self = (
-        handler => $args{handler} || 'header',
+        handler => $handler,
         header  => $args{header}  || {},
         query   => $args{query},
     );
@@ -42,7 +47,23 @@ sub new {
 }
 
 sub handler {
-    $_[0]->{handler};
+    my $self = shift;
+
+    if ( @_ ) {
+        my $handler = lc shift;
+
+        if ( $handler ne 'header' and $handler ne 'redirect' ) {
+            croak "Invalid handler '$handler' passed to handler()";
+        }
+        elsif ( $handler ne $self->{handler} ) {
+            $self->{handler} = $handler;
+            $self->rehash if $handler eq 'redirect';
+        }
+
+        return $handler;
+    }
+
+    $self->{handler};
 }
 
 sub header {
@@ -312,22 +333,18 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
   );
 
   # inspect $header
-  $props->header_get('-type'); # => "text/plain"
-  $props->header_exists('-type'); # => true
+  $props->get('-type'); # => "text/plain"
+  $props->exists('-type'); # => true
 
   # update $header 
-  $props->header_set( -type => 'text/plain' ); # overwrite
-  $props->header_delete('-type'); # => "text/plain"
-  $props->header_clear; # => $self
+  $props->set( -type => 'text/plain' ); # overwrite
+  $props->delete('-type'); # => "text/plain"
+  $props->clear; # => $self
 
-  $props->handler('redirect'); # or $props->header_type('redirect')
+  $props->handler('redirect');
   $props->as_string; # invokes $query->redirect
 
   my @headers = $props->flatten; # => ( "Content-Type", "text/html", ... )
-
-  # works like CGI::Application#header_props
-  my @header_props = $props->header_props;
-  $props->header_props( -type => 'text/plain', ... );
 
   # convenience methods
   $props->p3p(qw/CAO DSP LAW CURa/);
@@ -357,50 +374,46 @@ This module helps you handle CGI.pm-compatible HTTP header properties.
 
 =item query
 
-=item header_rehash
+=item rehash
 
-=item header_props
+=item $value = $props->get( $prop )
 
-=item $value = $props->header_get( $prop )
-
-=item $value = $props->header_set( $prop => $value )
+=item $value = $props->set( $prop => $value )
 
 Get or set the value of the header property.
 The property name (C<$prop>) is not case sensitive.
 You can use dashes as a replacement for underscores in property names.
 
-  $props->header_get('-content_length');
-  $props->header_get('Content-Length');
+  $props->get('-content_length');
+  $props->get('Content-Length');
 
 The C<$value> argument may be a plain string or a reference to an array
 of L<CGI::Cookie> objects for the C<-cookie> property:
 
-  $props->header_set( 'Content-Length' => 3002 );
-  my $length = $props->header_get('Content-Length'); # => 3002
+  $props->set( '-content_length' => 3002 );
+  my $length = $props->get('-content_length'); # => 3002
 
   # $cookie1 and $cookie2 are CGI::Cookie objects
-  $props->header_set( -cookie => [$cookie1, $cookie2] );
-  my $cookies = $props->header_get('-cookie'); # => [$cookie1, $cookie2]
+  $props->set( -cookie => [$cookie1, $cookie2] );
+  my $cookies = $props->get('-cookie'); # => [$cookie1, $cookie2]
 
-=item $value = $props->header_delete( $prop )
+=item $value = $props->delete( $prop )
 
 Deletes the specified property. Returns the value of the deleted property.
 
-  my $value = $props->header_delete('-content_disposition'); # => "inline"
+  my $value = $props->delete('-content_disposition'); # => "inline"
 
-=item $bool = $props->header_exists( $prop )
+=item $bool = $props->exists( $prop )
 
 Returns a Boolean value telling whether the specified property exists.
 
-  if ( $props->header_exists('-etag') ) {
+  if ( $props->exists('-etag') ) {
       ...
   }
 
-=item $self = $props->header_clear
+=item $self = $props->clear
 
-This will remove all header properties. It's identical to:
-
-  $props->header_props({});
+This will remove all header properties.
 
 =item @tags = $props->p3p
 
@@ -455,6 +468,12 @@ If set to a true value, will issue the correct headers to work with
 a NPH (no-parse-header) script.
 
 =item push_cookie
+
+=item push_p3p
+
+=item charset
+
+=item cookie
 
 =item as_string
 

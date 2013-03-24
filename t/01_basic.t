@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 34;
+use Test::More tests => 37;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -49,10 +49,10 @@ while ( my ($input, $expected) = splice @data, 0, 2 ) {
     is $props->normalize($input), $expected;
 }
 
-#$props->handler('redirect');
-#is $props->handler, 'redirect';
+$props->handler('redirect');
+is $props->handler, 'redirect';
 
-#throws_ok { $props->handler('param') } qr{Invalid handler};
+throws_ok { $props->handler('param') } qr{Invalid handler};
 
 %{ $props->header } = (
     '-Charset'      => 'utf-8',
@@ -78,15 +78,15 @@ is $props->get('-foo'), 'bar';
 ok $props->exists('-foo');
 is $props->delete('-foo'), 'bar';
 
-#$props->clear->handler('header');
-is_deeply [ $props->clear->flatten ],
+$props->clear->handler('header');
+is_deeply [ $props->flatten ],
     [ 'Content-Type', 'text/html; charset=ISO-8859-1' ];
 
-#$props->handler('redirect');
-#is_deeply [ $props->flatten ], [
-#    'Status', '302 Found',
-#    'Location', 'http://localhost',
-#];
+$props->handler('redirect');
+is_deeply [ $props->flatten ], [
+    'Status', '302 Found',
+    'Location', 'http://localhost',
+];
 
 $props->p3p(qw/CAO DSP LAW CURa/);
 is_deeply [$props->p3p], [qw/CAO DSP LAW CURa/];
