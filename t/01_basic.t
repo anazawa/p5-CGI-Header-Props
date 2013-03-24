@@ -28,7 +28,7 @@ can_ok $props, qw( p3p nph expires attachment );
 can_ok $props, qw( get set delete exists );
 
 # etc.
-can_ok $props, qw( flatten as_string rehash );
+can_ok $props, qw( as_string rehash );
 
 isa_ok $props->query, 'CGI';
 isa_ok $props->header, 'HASH';
@@ -78,18 +78,19 @@ is $props->get('-foo'), 'bar';
 ok $props->exists('-foo');
 is $props->delete('-foo'), 'bar';
 
-$props->clear->handler('header');
-is_deeply [ $props->flatten ],
-    [ 'Content-Type', 'text/html; charset=ISO-8859-1' ];
-
-$props->handler('redirect');
-is_deeply [ $props->flatten ], [
-    'Status', '302 Found',
-    'Location', 'http://localhost',
-];
-
 $props->p3p(qw/CAO DSP LAW CURa/);
 is_deeply [$props->p3p], [qw/CAO DSP LAW CURa/];
+
+$props->clear;
+
+$props->handler('header');
+is $props->as_string,
+    "Content-Type: text/html; charset=ISO-8859-1$CGI::CRLF$CGI::CRLF";
+
+$props->handler('redirect');
+is $props->as_string,
+    "Status: 302 Found$CGI::CRLF" .
+    "Location: http://localhost$CGI::CRLF$CGI::CRLF";
 
 $props->nph(1);
 ok $props->nph;

@@ -23,11 +23,6 @@ our %ALIAS = (
     },
 );
 
-sub time2str {
-    require CGI::Util;
-    CGI::Util::expires( $_[1], 'http' );
-}
-
 sub new {
     my $class   = shift;
     my %args    = @_;
@@ -234,57 +229,6 @@ sub p3p {
     return;
 }
 
-sub flatten {
-    my $self   = shift;
-    my $query  = $self->query;
-    my %header = %{ $self->{header} }; # copy
-    my $nph    = delete $header{-nph} || $query->nph;
-
-    if ( $self->{handler} eq 'redirect' ) {
-        $header{-location} ||= $query->self_url;
-        $header{-status} = '302 Found' if !defined $header{-status};
-        $header{-type} = q{} if !exists $header{-type};
-    }
-
-    my @headers;
-
-    my ( $charset, $cookie, $expires, $status, $target, $type )
-        = delete @header{qw/-charset -cookie -expires -status -target -type/};
-
-    push @headers, 'Server', $query->server_software if $nph;
-    push @headers, 'Status', $status        if $status;
-    push @headers, 'Window-Target', $target if $target;
-
-    if ( my $tags = delete $header{-p3p} ) {
-        $tags = join ' ', @{ $tags } if ref $tags eq 'ARRAY';
-        push @headers, 'P3P', qq{policyref="/w3c/p3p.xml", CP="$tags"};
-    }
-
-    if ( $cookie ) {
-        my @cookies = ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
-        push @headers, map { ('Set-Cookie', "$_") } @cookies;
-    }
-
-    push @headers, 'Expires', $self->time2str($expires) if $expires;
-    push @headers, 'Date', $self->time2str if $expires or $cookie or $nph;
-    push @headers, 'Pragma', 'no-cache' if $query->cache;
-
-    if ( my $fn = delete $header{-attachment} ) {
-        push @headers, 'Content-Disposition', qq{attachment; filename="$fn"};
-    }
-
-    push @headers, map { _ucfirst($_), $header{$_} } keys %header;
-
-    if ( !defined $type or $type ne q{} ) {
-        $charset = $query->charset unless defined $charset;
-        my $ct = $type || 'text/html';
-        $ct .= "; charset=$charset" if $charset && $ct !~ /\bcharset\b/;
-        push @headers, 'Content-Type', $ct;
-    }
-
-    @headers;
-}
-
 sub as_string {
     my $self = shift;
     my $handler = $self->{handler};
@@ -296,13 +240,6 @@ sub _lc {
     $str =~ s/^-//;
     $str =~ tr/-/_/;
     "-$str";
-}
-
-sub _ucfirst {
-    my $str = shift;
-    $str =~ s/^-(\w)/\u$1/;
-    $str =~ tr/_/-/;
-    $str;
 }
 
 1;
@@ -344,8 +281,6 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
   $props->handler('redirect');
   $props->as_string; # invokes $query->redirect
 
-  my @headers = $props->flatten; # => ( "Content-Type", "text/html", ... )
-
   # convenience methods
   $props->p3p(qw/CAO DSP LAW CURa/);
   $props->expires('+3d');
@@ -362,8 +297,10 @@ This document refers to CGI::Header::Props version 0.01;
 
 This module helps you handle CGI.pm-compatible HTTP header properties.
 
-Unlike L<CGI::Header>, you need to manipulate the header properties
-directly.
+Unlike L<CGI::Header>, this module focuses on manipulating
+the header property itself. If you're familiar with L<CGI::Application>'s
+C<header_add()>, C<header_props()> or C<header_type()> method, you can use
+this module easily.
 
 =head1 METHODS
 
@@ -561,10 +498,6 @@ a NPH (no-parse-header) script.
 =item cookie
 
 =item as_string
-
-=item flatten
-
-Returns pairs of fields and values.
 
 =back
 
