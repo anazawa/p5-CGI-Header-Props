@@ -1,25 +1,17 @@
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 6;
 
 package MyApp;
 use base 'CGI::Application';
 use CGI::Application::Plugin::Header 'header';
-
-sub setup {
-    my $self = shift;
-    $self->run_modes( start => 'do_start' );
-}
-
-sub do_start {
-    my $self = shift;
-    'hello, world';
-}
 
 package main;
 
 my $app = MyApp->new;
 
 isa_ok $app->header, 'CGI::Header::Props';
+
+is $app->query, $app->header->query, 'should return the same query object';
 
 $app->header(
     -charset => 'utf-8',

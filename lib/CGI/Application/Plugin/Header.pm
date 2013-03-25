@@ -8,7 +8,7 @@ use Exporter 'import';
 our @EXPORT_OK = qw( header );
 
 sub header {
-    my ( $self, @args ) = @_;
+    my ( $self, @props ) = @_;
 
     my $header
         = $self->{+__PACKAGE__}
@@ -16,7 +16,7 @@ sub header {
 
     $header->handler( $self->header_type );
 
-    if ( !exists $self->{__HEADER_PROPS} ) {
+    if ( !$self->{__HEADER_PROPS} ) {
         $self->{__HEADER_PROPS} = $header->header; # initialize
     }
     elsif ( $self->{__HEADER_PROPS} ne $header->header ) {
@@ -24,12 +24,12 @@ sub header {
         $self->{__HEADER_PROPS} = $header->header; # overwrite
     }
 
-    if ( @args ) {
-        if ( @args % 2 == 0 ) { # setter
-            $header->set( @args );
+    if ( @props ) {
+        if ( @props % 2 == 0 ) { # setter
+            $header->set( @props );
         }
-        elsif ( @args == 1 ) { # getter
-            return $header->get( $args[0] );
+        elsif ( @props == 1 ) { # getter
+            return $header->get( $props[0] );
         }
         else {
             croak "Odd number of elements passed to header()";
