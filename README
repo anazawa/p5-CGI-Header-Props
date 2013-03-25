@@ -31,8 +31,6 @@ SYNOPSIS
       $props->handler('redirect');
       $props->as_string; # invokes $query->redirect
 
-      my @headers = $props->flatten; # => ( "Content-Type", "text/html", ... )
-
       # convenience methods
       $props->p3p(qw/CAO DSP LAW CURa/);
       $props->expires('+3d');
@@ -47,8 +45,10 @@ VERSION
 DESCRIPTION
     This module helps you handle CGI.pm-compatible HTTP header properties.
 
-    Unlike CGI::Header, you need to manipulate the header properties
-    directly.
+    Unlike CGI::Header, this module focuses on manipulating the header
+    property itself. If you're familiar with CGI::Application's
+    "header_add()", "header_props()" or "header_type()" method, you can use
+    this module easily.
 
 METHODS
     $props->new
@@ -221,8 +221,6 @@ METHODS
     charset
     cookie
     as_string
-    flatten
-        Returns pairs of fields and values.
 
 SEE ALSO
     CGI::Application, CGI

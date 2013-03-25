@@ -7,6 +7,7 @@ repository 'https://github.com/anazawa/p5-CGI-Header-Props';
 
 requires 'Carp' => '1.10';
 
+test_requires 'CGI::Application';
 test_requires 'Test::Exception' => '0.31';
 test_requires 'Test::More' => '0.98';
 

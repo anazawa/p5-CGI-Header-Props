@@ -24,21 +24,13 @@ our %ALIAS = (
 );
 
 sub new {
-    my $class   = shift;
-    my %args    = @_;
-    my $handler = $args{handler} || 'header';
+    my $class = shift;
 
-    if ( $handler ne 'header' and $handler ne 'redirect' ) {
-        croak "Invalid handler '$handler' passed to new()";
-    }
-
-    my %self = (
-        handler => $handler,
-        header  => $args{header} || {},
-        query   => $args{query},
-    );
-
-    bless \%self, $class;
+    bless {
+        handler => 'header',
+        header => {},
+        @_,
+    }, $class;
 }
 
 sub handler {
@@ -146,6 +138,10 @@ sub _push {
     scalar @values;
 }
 
+sub flatten {
+    %{ $_[0]->{header} };
+}
+
 sub clear {
     my $self = shift;
     %{ $self->{header} } = ();
@@ -167,8 +163,9 @@ sub attachment {
 
 sub charset {
     my $self = shift;
-    my $charset = $self->{header}->{-charset};
-    defined $charset ? $charset : $self->query->charset;
+    my $header = $self->{header};
+    return $header->{-charset} = shift if @_;
+    defined $header->{-charset} ? $header->{-charset} : $self->query->charset;
 }
 
 sub cookie {
