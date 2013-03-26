@@ -89,27 +89,27 @@ sub rehash {
 }
 
 sub get {
-    my $self = shift;
-    my @props = map { $self->normalize($_) } @_;
-    @{ $self->{header} }{ @props };
+    my ( $self, $key ) = @_;
+    my $prop = $self->normalize( $key );
+    $self->{header}->{$prop};
 }
 
 sub set {
-    my ( $self, %props ) = @_;
-    my @props = map { $self->normalize($_) } keys %props;
-    @{ $self->{header} }{ @props } = values %props;
+    my ( $self, $key, $value ) = @_;
+    my $prop = $self->normalize( $key );
+    $self->{header}->{$prop} = $value;
 }
 
 sub exists {
-    my $self = shift;
-    my $prop = $self->normalize( shift );
+    my ( $self, $key ) = @_;
+    my $prop = $self->normalize( $key );
     exists $self->{header}->{$prop};
 }
 
 sub delete {
-    my $self = shift;
-    my @props = map { $self->normalize($_) } @_;
-    delete @{ $self->{header} }{ @props };
+    my ( $self, $key ) = @_;
+    my $prop = $self->normalize( $key );
+    delete $self->{header}->{$prop};
 }
 
 sub push_cookie {

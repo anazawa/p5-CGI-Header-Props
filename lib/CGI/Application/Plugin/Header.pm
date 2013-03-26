@@ -20,15 +20,20 @@ sub header {
         $self->{__HEADER_PROPS} = $header->header; # initialize
     }
     elsif ( $self->{__HEADER_PROPS} != $header->header ) {
-        $header->clear->set( $self->header_props );
-        $self->{__HEADER_PROPS} = $header->header; # overwrite
+        my %props = $self->header_props;
+        $self->{__HEADER_PROPS} = $header->clear->header; # overwrite
+        while ( my ($key, $value) = each %props ) {
+            $header->set( $key => $value );
+        }
     }
 
     if ( @props ) {
-        if ( @props % 2 == 0 ) { # setter
-            $header->set( @props );
+        if ( @props % 2 == 0 ) {
+            while ( my ($key, $value) = splice @props, 0, 2 ) {
+                $header->set( $key => $value );
+            }
         }
-        elsif ( @props == 1 ) { # getter
+        elsif ( @props == 1 ) {
             return $header->get( $props[0] );
         }
         else {
