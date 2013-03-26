@@ -6,7 +6,7 @@ use Carp qw/croak/;
 
 our $VERSION = '0.01';
 
-our %ALIAS = (
+our %PROPERTY_ALIAS = (
     header => {
         -content_type  => '-type',
         -cookies       => '-cookie',
@@ -71,7 +71,7 @@ sub normalize {
     my $self = shift;
     my $prop = _lc( shift );
     my $handler = $self->{handler};
-    $ALIAS{$handler}{$prop} || $prop;
+    $PROPERTY_ALIAS{$handler}{$prop} || $prop;
 }
 
 sub rehash {
