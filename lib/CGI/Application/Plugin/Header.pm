@@ -19,10 +19,10 @@ sub header {
     $self->{__HEADER_PROPS} = do {
         my $props = $header->header;
 
-        if ( my $__HEADER_PROPS = $self->{__HEADER_PROPS} ) {
-            if ( $__HEADER_PROPS != $props ) { # numeric compare of references
+        if ( my $PROPS = $self->{__HEADER_PROPS} ) {
+            if ( $PROPS != $props ) { # numeric compare of references
                 $header->clear;
-                while ( my ($key, $value) = each %{$__HEADER_PROPS} ) {
+                while ( my ($key, $value) = each %{$PROPS} ) {
                     $header->set( $key => $value );
                 }
             }
