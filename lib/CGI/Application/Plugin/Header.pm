@@ -16,16 +16,20 @@ sub header {
 
     $header->handler( $self->header_type );
 
-    if ( !$self->{__HEADER_PROPS} ) {
-        $self->{__HEADER_PROPS} = $header->header; # initialize
-    }
-    elsif ( $self->{__HEADER_PROPS} != $header->header ) {
-        my %props = $self->header_props;
-        $self->{__HEADER_PROPS} = $header->clear->header; # overwrite
-        while ( my ($key, $value) = each %props ) {
-            $header->set( $key => $value );
+    $self->{__HEADER_PROPS} = do {
+        my $props = $header->header;
+
+        if ( my $__HEADER_PROPS = $self->{__HEADER_PROPS} ) {
+            if ( $__HEADER_PROPS != $props ) { # numeric compare of references
+                $header->clear;
+                while ( my ($key, $value) = each %{$__HEADER_PROPS} ) {
+                    $header->set( $key => $value );
+                }
+            }
         }
-    }
+
+        $props;
+    };
 
     if ( @props ) {
         if ( @props % 2 == 0 ) {
