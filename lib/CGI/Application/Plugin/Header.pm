@@ -59,12 +59,12 @@ CGI::Application::Plugin::Header - Plugin for handling header props.
       my $self = shift;
 
       # get header props.
-      my $type = $self->header('-type'); # => "text/html"
+      my $type = $self->header('type'); # => "text/html"
 
       # set header props.
       $self->header(
-          -charset => 'utf-8',
-          -type => 'text/plain'
+          charset => 'utf-8',
+          type => 'text/plain'
       );
 
       # using CGI::Header::Props object
