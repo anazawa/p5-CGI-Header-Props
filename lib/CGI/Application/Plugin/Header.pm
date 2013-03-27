@@ -21,10 +21,7 @@ sub header {
 
         if ( my $PROPS = $self->{__HEADER_PROPS} ) {
             if ( $PROPS != $props ) { # numeric compare of references
-                $header->clear;
-                while ( my ($key, $value) = each %{$PROPS} ) {
-                    $header->set( $key => $value );
-                }
+                $header->replace( %{$PROPS} );
             }
         }
 
@@ -33,9 +30,7 @@ sub header {
 
     if ( @props ) {
         if ( @props % 2 == 0 ) {
-            while ( my ($key, $value) = splice @props, 0, 2 ) {
-                $header->set( $key => $value );
-            }
+            return $header->merge( @props );
         }
         elsif ( @props == 1 ) {
             return $header->get( $props[0] );
@@ -82,6 +77,7 @@ CGI::Application::Plugin::Header - Plugin for handling header props.
       if ( $header->exists($key) ) { ... }
       $header->set( $key => $value );
       $header->delete( $key );
+      $header->push_cookie( @cookies );
 
       # compatible with the core methods of CGI::Applications
       $self->header_props( $key => $value, ... );
@@ -96,29 +92,48 @@ CGI::Application::Plugin::Header - Plugin for handling header props.
 This plugin provides a way to handle CGI.pm-compatible HTTP header
 properties.
 
+=head2 FEATURES
+
+=over
+
+=item * Normalizes property names automatically
+(e.g. C<Content_Type> -> C<type>),
+and so you can specify them consistently.
+
+=item * Compatible with the existing handlers such as
+C<CGI::Application#header_props>, C<header_add> or C<header_type>.
+
+=back
+
 =head2 METHODS
+
+This plugin exports the C<header()> method to your application on demand.
+
+  use CGI::Application::Plugin::Header 'header';
+
+C<header()> can be used as follows (C<$cgiapp> denotes the instance
+of your application):
 
 =over 4
 
-=item $cgiapp->header
+=item $header = $cgiapp->header
 
-Returns a L<CGI::Header::Props> object.
+Returns a L<CGI::Header::Props> object associated with C<$cgiapp>.
 
 =item $value = $cgiapp->header( $prop )
 
-A shortcut for:
+Returns the value of the specified property. It's identical to:
 
   $value = $cgiapp->header->get( $prop );
 
 =item $cgiapp->header( $p1 => $v1, $p2 => $v2, ... )
 
+Given key-value pairs of header props., merges them into the existing
+properties.
+
 A shortcut for:
 
-  $cgiapp->header->set(
-      $p1 => $v1,
-      $p2 => $v2,
-      ...
-  );
+  $cgiapp->header->set( $prop => $value )
 
 =back
 

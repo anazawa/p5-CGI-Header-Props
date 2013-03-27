@@ -138,6 +138,28 @@ sub _push {
     scalar @values;
 }
 
+sub merge {
+    my ( $self, @props ) = @_;
+
+    if ( @props % 2 == 0 ) {
+        my $header = $self->{header};
+        while ( my ($key, $value) = splice @props, 0, 2 ) {
+            my $prop = $self->normalize( $key );
+            $header->{ $prop } = $value;
+        }
+    }
+    else {
+        croak 'Odd number of elements passed to merge()';
+    }
+
+    $self;
+}
+
+sub replace {
+    my $self = shift;
+    $self->clear->merge(@_);
+}
+
 sub flatten {
     %{ $_[0]->{header} };
 }
@@ -267,12 +289,12 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
   );
 
   # inspect $header
-  $props->get('-type'); # => "text/plain"
-  $props->exists('-type'); # => true
+  $props->get('type'); # => "text/plain"
+  $props->exists('type'); # => true
 
   # update $header 
-  $props->set( -type => 'text/plain' ); # overwrite
-  $props->delete('-type'); # => "text/plain"
+  $props->set( type => 'text/plain' ); # overwrite
+  $props->delete('type'); # => "text/plain"
   $props->clear; # => $self
 
   $props->handler('redirect');
@@ -368,7 +390,7 @@ Normalized property names are:
 
 =back
 
-CGI.pm's C<header()> also accepts aliases of property names.
+CGI.pm's C<header()> method also accepts aliases of property names.
 This module converts them as follows:
 
   # for CGI#header
@@ -403,30 +425,30 @@ Get or set the value of the header property.
 The property name (C<$prop>) is not case sensitive.
 You can use dashes as a replacement for underscores in property names.
 
-  $props->get('-content_length');
+  $props->get('content_length');
   $props->get('Content-Length');
 
 The C<$value> argument may be a plain string or a reference to an array
 of L<CGI::Cookie> objects for the C<-cookie> property:
 
-  $props->set( '-content_length' => 3002 );
-  my $length = $props->get('-content_length'); # => 3002
+  $props->set( 'content_length' => 3002 );
+  my $length = $props->get('content_length'); # => 3002
 
   # $cookie1 and $cookie2 are CGI::Cookie objects
-  $props->set( -cookie => [$cookie1, $cookie2] );
-  my $cookies = $props->get('-cookie'); # => [$cookie1, $cookie2]
+  $props->set( cookie => [$cookie1, $cookie2] );
+  my $cookies = $props->get('cookie'); # => [$cookie1, $cookie2]
 
 =item $value = $props->delete( $prop )
 
 Deletes the specified property. Returns the value of the deleted property.
 
-  my $value = $props->delete('-content_disposition'); # => "inline"
+  my $value = $props->delete('content_disposition'); # => "inline"
 
 =item $bool = $props->exists( $prop )
 
 Returns a Boolean value telling whether the specified property exists.
 
-  if ( $props->exists('-etag') ) {
+  if ( $props->exists('etag') ) {
       ...
   }
 
@@ -481,26 +503,46 @@ In this case, the outgoing header will be formatted as:
 
   Content-Disposition: attachment; filename="genome.jpg"
 
-=item nph
+=item $props->nph
 
 If set to a true value, will issue the correct headers to work with
 a NPH (no-parse-header) script.
 
-=item push_cookie
+=item $props->push_cookie( @cookies )
 
-=item push_p3p
+Given a list of L<CGI::Cookie> objects, appends them to the existing
+C<cookie> property.
 
-=item charset
+=item $props->push_p3p( @tags )
 
-=item cookie
+Given a list of P3P tags, appends them to the existing C<p3p> property.
 
-=item as_string
+=item $props->charset
+
+Returns the character set sent to the browser.
+
+=item $props->cookie( @cookies )
+
+=item @cookies = $props->cookie
+
+Get or set the C<cookie> property.
+
+=item $props->as_string
+
+Invokes the following method by default:
+
+  $props->query->header( $props->header );
+
+If C<< $props->handler >> is set to C<redirect>, invokes the following method
+instead:
+
+  $props->query->redirect( $props->header );
 
 =back
 
 =head1 SEE ALSO
 
-L<CGI::Application>, L<CGI>
+L<CGI>
 
 =head1 AUTHOR
 
