@@ -138,28 +138,6 @@ sub _push {
     scalar @values;
 }
 
-sub merge {
-    my ( $self, @props ) = @_;
-
-    if ( @props % 2 == 0 ) {
-        my $header = $self->{header};
-        while ( my ($key, $value) = splice @props, 0, 2 ) {
-            my $prop = $self->normalize( $key );
-            $header->{ $prop } = $value;
-        }
-    }
-    else {
-        croak 'Odd number of elements passed to merge()';
-    }
-
-    $self;
-}
-
-sub replace {
-    my $self = shift;
-    $self->clear->merge(@_);
-}
-
 sub flatten {
     %{ $_[0]->{header} };
 }

@@ -21,7 +21,10 @@ sub header {
 
         if ( my $PROPS = $self->{__HEADER_PROPS} ) {
             if ( $PROPS != $props ) { # numeric compare of references
-                $header->replace( %{$PROPS} );
+                $header->clear;
+                while ( my ($key, $value) = each %{$PROPS} ) {
+                    $header->set( $key, $value );
+                }
             }
         }
 
@@ -30,7 +33,9 @@ sub header {
 
     if ( @props ) {
         if ( @props % 2 == 0 ) {
-            return $header->merge( @props );
+            while ( my ($key, $value) = splice @props, 0, 2 ) {
+                $header->set( $key, $value );
+            }
         }
         elsif ( @props == 1 ) {
             return $header->get( $props[0] );
