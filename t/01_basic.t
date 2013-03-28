@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 36;
+use Test::More tests => 45;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -22,7 +22,8 @@ can_ok $props, qw( new normalize );
 can_ok $props, qw( header query _build_query handler );
 
 # properties
-can_ok $props, qw( p3p nph expires attachment cookie );
+can_ok $props,
+    qw( p3p nph expires attachment cookie type status location target );
 
 # operators
 can_ok $props, qw( get set delete exists push_cookie push_p3p );
@@ -49,10 +50,10 @@ while ( my ($input, $expected) = splice @data, 0, 2 ) {
     is $props->normalize($input), $expected;
 }
 
-$props->set( -foo => 'bar' );
-is $props->get('-foo'), 'bar';
-ok $props->exists('-foo');
-is $props->delete('-foo'), 'bar';
+$props->set( foo => 'bar' );
+is $props->get('foo'), 'bar';
+ok $props->exists('foo');
+is $props->delete('foo'), 'bar';
 
 $props->clear->set( uri => 'http://www.example.com/' );
 $props->handler('redirect');
@@ -160,3 +161,27 @@ is $props->charset, 'utf-8';
 
 $props->charset(q{});
 is $props->charset, q{};
+
+
+# type
+
+$props->type('text/plain');
+is $props->type, 'text/plain';
+
+
+# location
+
+$props->location('http://www.example.com/');
+is $props->location, 'http://www.example.com/';
+
+
+# target
+
+$props->target('ResultsWindow');
+is $props->target, 'ResultsWindow';
+
+
+# status
+
+$props->status('304 Not Modified');
+is $props->status, '304 Not Modified';

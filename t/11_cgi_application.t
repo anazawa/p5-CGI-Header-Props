@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 package MyApp;
 use base 'CGI::Application';
@@ -9,13 +9,14 @@ package main;
 
 my $app = MyApp->new;
 
+can_ok $app, 'header';
 isa_ok $app->header, 'CGI::Header::Props';
 
 is $app->query, $app->header->query, 'should return the same query object';
 
 $app->header(
-    -charset => 'utf-8',
-    -type => 'text/plain',
+    charset => 'utf-8',
+    type => 'text/plain',
 );
 
 is_deeply +{ $app->header_props }, {
@@ -23,12 +24,12 @@ is_deeply +{ $app->header_props }, {
     -type => 'text/plain',
 }, '__HEADER_PROPS should be updated';
 
-is $app->header('-type'), 'text/plain',
+is $app->header('type'), 'text/plain',
     "should return the value of '-type'"; 
 
 $app->header_props(
-    -charset => 'utf-8',
-    -type => 'text/plain',
+    charset => 'utf-8',
+    type => 'text/plain',
 );
 
 is_deeply $app->header->header, {

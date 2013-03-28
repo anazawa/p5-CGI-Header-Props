@@ -146,6 +146,20 @@ sub clear {
     $self;
 }
 
+BEGIN {
+    for my $method (qw/location status target type/) {
+        my $prop = "-$method";
+        my $code = sub {
+            my $self = shift;
+            return $self->{header}->{$prop} = shift if @_;
+            return $self->{header}->{$prop};
+        };
+
+        no strict 'refs';
+        *{$method} = $code;
+    }
+}
+
 sub attachment {
     my $self   = shift;
     my $header = $self->{header};
@@ -153,22 +167,16 @@ sub attachment {
     if ( @_ ) {
         my $attachment = shift;
         delete $header->{-content_disposition} if $attachment;
-        $header->{-attachment} = $attachment;
-        return $self;
+        return $header->{-attachment} = $attachment;
     }
 
     $header->{-attachment};
 }
 
 sub charset {
-    my $self   = shift;
+    my $self = shift;
     my $header = $self->{header};
-
-    if ( @_ ) {
-        $header->{-charset} = shift if @_;
-        return $self;
-    }
-
+    return $header->{-charset} = shift if @_;
     defined $header->{-charset} ? $header->{-charset} : $self->query->charset;
 }
 
@@ -179,8 +187,7 @@ sub cookie {
     if ( @_ ) {
         my $cookie = @_ > 1 ? [ @_ ] : shift;
         delete $header->{-date} if $cookie;
-        $header->{-cookie} = $cookie;
-        return $self;
+        return $header->{-cookie} = $cookie;
     }
     elsif ( my $cookie = $header->{-cookie} ) {
         return ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
@@ -196,8 +203,7 @@ sub expires {
     if ( @_ ) {
         my $expires = shift;
         delete $header->{-date} if $expires;
-        $header->{-expires} = $expires;
-        return $self;
+        return $header->{-expires} = $expires;
     }
 
     $header->{-expires};
@@ -212,8 +218,7 @@ sub nph {
         my $nph = shift;
         croak "The '-nph' pragma is enabled" if !$nph and $NPH;
         delete @{ $header }{qw/-date -server/} if $nph;
-        $header->{-nph} = $nph;
-        return $self;
+        return $header->{-nph} = $nph;
     }
 
     $NPH or $header->{-nph};
@@ -224,8 +229,7 @@ sub p3p {
     my $header = $self->{header};
 
     if ( @_ ) {
-        $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
-        return $self;
+        return $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
     }
     elsif ( my $tags = $header->{-p3p} ) {
         return ref $tags eq 'ARRAY' ? @{$tags} : split ' ', $tags;
@@ -446,6 +450,7 @@ This will remove all header properties. Returns this object itself.
 
 =item $props->attachment
 
+Get or set the C<attachment> property.
 Can be used to turn the page into an attachment.
 Represents suggested name for the saved file.
 
@@ -458,7 +463,7 @@ In this case, the outgoing header will be formatted as:
 
 =item $props->charset
 
-Get or set the character set sent to the browser.
+Get or set the C<charset> property.
 
 =item $props->cookie( @cookies )
 
@@ -497,8 +502,9 @@ a NPH (no-parse-header) script.
 
 =item $props->p3p( @tags )
 
-Represents P3P tags. The parameter can be an array or a space-delimited
-string. Returns a list of P3P tags. (In scalar context, returns the number
+Get or set the C<p3p> property. The parameter can be an array or a
+space-delimited string.
+Returns a list of P3P tags. (In scalar context, returns the number
 of P3P tags.)
 
   $props->p3p(qw/CAO DSP LAW CURa/);
