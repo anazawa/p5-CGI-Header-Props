@@ -23,7 +23,7 @@ sub header {
             if ( $PROPS != $props ) { # numeric compare of references
                 $header->clear;
                 while ( my ($key, $value) = each %{$PROPS} ) {
-                    $header->set( $key, $value );
+                    $header->set( $key => $value );
                 }
             }
         }
@@ -34,7 +34,7 @@ sub header {
     if ( @props ) {
         if ( @props % 2 == 0 ) {
             while ( my ($key, $value) = splice @props, 0, 2 ) {
-                $header->set( $key, $value );
+                $header->set( $key => $value );
             }
         }
         elsif ( @props == 1 ) {
