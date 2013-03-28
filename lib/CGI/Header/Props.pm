@@ -123,9 +123,7 @@ sub push_p3p {
 }
 
 sub _push {
-    my $self   = shift;
-    my $prop   = shift;
-    my @values = ref $_[0] eq 'ARRAY' ? @{ $_[0] } : @_;
+    my ( $self, $prop, @values ) = @_;
     my $header = $self->{header};
 
     if ( my $value = $header->{$prop} ) {
@@ -155,27 +153,34 @@ sub attachment {
     if ( @_ ) {
         my $attachment = shift;
         delete $header->{-content_disposition} if $attachment;
-        return $header->{-attachment} = $attachment;
+        $header->{-attachment} = $attachment;
+        return $self;
     }
 
     $header->{-attachment};
 }
 
 sub charset {
-    my $self = shift;
+    my $self   = shift;
     my $header = $self->{header};
-    return $header->{-charset} = shift if @_;
+
+    if ( @_ ) {
+        $header->{-charset} = shift if @_;
+        return $self;
+    }
+
     defined $header->{-charset} ? $header->{-charset} : $self->query->charset;
 }
 
 sub cookie {
-    my $self = shift;
+    my $self   = shift;
     my $header = $self->{header};
 
     if ( @_ ) {
         my $cookie = @_ > 1 ? [ @_ ] : shift;
         delete $header->{-date} if $cookie;
-        return $header->{-cookie} = $cookie;
+        $header->{-cookie} = $cookie;
+        return $self;
     }
     elsif ( my $cookie = $header->{-cookie} ) {
         return ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
@@ -191,7 +196,8 @@ sub expires {
     if ( @_ ) {
         my $expires = shift;
         delete $header->{-date} if $expires;
-        return $header->{-expires} = $expires;
+        $header->{-expires} = $expires;
+        return $self;
     }
 
     $header->{-expires};
@@ -206,7 +212,8 @@ sub nph {
         my $nph = shift;
         croak "The '-nph' pragma is enabled" if !$nph and $NPH;
         delete @{ $header }{qw/-date -server/} if $nph;
-        return $header->{-nph} = $nph;
+        $header->{-nph} = $nph;
+        return $self;
     }
 
     $NPH or $header->{-nph};
@@ -217,7 +224,8 @@ sub p3p {
     my $header = $self->{header};
 
     if ( @_ ) {
-        return $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
+        $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
+        return $self;
     }
     elsif ( my $tags = $header->{-p3p} ) {
         return ref $tags eq 'ARRAY' ? @{$tags} : split ' ', $tags;
@@ -409,7 +417,7 @@ You can use dashes as a replacement for underscores in property names.
   $props->get('Content-Length');
 
 The C<$value> argument may be a plain string or a reference to an array
-of L<CGI::Cookie> objects for the C<-cookie> property:
+of L<CGI::Cookie> objects for the C<cookie> property:
 
   $props->set( 'content_length' => 3002 );
   my $length = $props->get('content_length'); # => 3002
@@ -436,6 +444,55 @@ Returns a Boolean value telling whether the specified property exists.
 
 This will remove all header properties. Returns this object itself.
 
+=item $props->attachment
+
+Can be used to turn the page into an attachment.
+Represents suggested name for the saved file.
+
+  $props->attachment('genome.jpg');
+  my $filename = $props->attachment; # => "genome.jpg"
+
+In this case, the outgoing header will be formatted as:
+
+  Content-Disposition: attachment; filename="genome.jpg"
+
+=item $props->charset
+
+Get or set the character set sent to the browser.
+
+=item $props->cookie( @cookies )
+
+=item @cookies = $props->cookie
+
+Get or set the C<cookie> property.
+The parameter can be a list of L<CGI::Cookie> objects.
+
+=item $props->push_cookie( @cookies )
+
+Given a list of L<CGI::Cookie> objects, appends them to the
+C<cookie> property.
+
+=item $props->expires
+
+The Expires header gives the date and time after which the entity
+should be considered stale. You can specify an absolute or relative
+expiration interval. The following forms are all valid for this field:
+
+  $props->expires('+30s'); # 30 seconds from now
+  $props->expires('+10m'); # ten minutes from now
+  $props->expires( '+1h'); # one hour from now
+  $props->expires( 'now'); # immediately
+  $props->expires( '+3M'); # in three months
+  $props->expires('+10y'); # in ten years time
+
+  # at the indicated time & date
+  $props->expires('Thu, 25 Apr 1999 00:40:33 GMT');
+
+=item $props->nph
+
+If set to a true value, will issue the correct headers to work with
+a NPH (no-parse-header) script.
+
 =item @tags = $props->p3p
 
 =item $props->p3p( @tags )
@@ -455,63 +512,19 @@ In this case, the outgoing header will be formatted as:
 
   P3P: policyref="/w3c/p3p.xml", CP="CAO DSP LAW CURa"
 
-=item $props->expires
-
-The Expires header gives the date and time after which the entity
-should be considered stale. You can specify an absolute or relative
-expiration interval. The following forms are all valid for this field:
-
-  $props->expires('+30s'); # 30 seconds from now
-  $props->expires('+10m'); # ten minutes from now
-  $props->expires( '+1h'); # one hour from now
-  $props->expires( 'now'); # immediately
-  $props->expires( '+3M'); # in three months
-  $props->expires('+10y'); # in ten years time
-
-  # at the indicated time & date
-  $props->expires('Thu, 25 Apr 1999 00:40:33 GMT');
-
-=item $props->attachment
-
-Can be used to turn the page into an attachment.
-Represents suggested name for the saved file.
-
-  $props->attachment('genome.jpg');
-  my $filename = $props->attachment; # => "genome.jpg"
-
-In this case, the outgoing header will be formatted as:
-
-  Content-Disposition: attachment; filename="genome.jpg"
-
-=item $props->nph
-
-If set to a true value, will issue the correct headers to work with
-a NPH (no-parse-header) script.
-
-=item $props->push_cookie( @cookies )
-
-Given a list of L<CGI::Cookie> objects, appends them to the existing
-C<cookie> property.
-
 =item $props->push_p3p( @tags )
 
-Given a list of P3P tags, appends them to the existing C<p3p> property.
-
-=item $props->charset
-
-Returns the character set sent to the browser.
-
-=item $props->cookie( @cookies )
-
-=item @cookies = $props->cookie
-
-Get or set the C<cookie> property.
+Given a list of P3P tags, appends them to the C<p3p> property.
 
 =item $props->as_string
 
 Stringifies the header props. associated with this object.
 The header props. will be passed to CGI.pm's C<header()> or C<redirect()>
-method.
+method (It depends on the return value of C<< $props->handler >>).
+It's identicalt to:
+
+  my $handler = $props->handler; # => "header" or "redirect"
+  $props->query->$handler( $props->header );
 
 =back
 

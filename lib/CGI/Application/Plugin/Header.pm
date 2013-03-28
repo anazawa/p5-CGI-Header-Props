@@ -116,8 +116,8 @@ This plugin exports the C<header()> method to your application on demand.
 
   use CGI::Application::Plugin::Header 'header';
 
-C<header()> can be used as follows (C<$cgiapp> denotes the instance
-of your application):
+C<header()> can be used as follows, where C<$cgiapp> denotes the instance
+of your application which inherits from L<CGI::Application>:
 
 =over 4
 
@@ -142,10 +142,14 @@ Returns the value of the specified property. It's identical to:
 
   $value = $cgiapp->header->get( $prop );
 
-=item $cgiapp->header( $p1 => $v1, $p2 => $v2, ... )
+=item $cgiapp->header( @props )
 
 Given key-value pairs of header props., merges them into the existing
-properties.
+properties. It's identical to:
+
+  while ( my ($key, $value) = splice @props, 0, 2 ) {
+      $cgiapp->header->set( $key => $value );
+  }
 
 =back
 
