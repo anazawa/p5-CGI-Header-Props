@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 45;
+use Test::More tests => 49;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,

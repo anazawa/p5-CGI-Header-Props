@@ -145,7 +145,7 @@ METHODS
           $props->get('Content-Length');
 
         The $value argument may be a plain string or a reference to an array
-        of CGI::Cookie objects for the "-cookie" property:
+        of CGI::Cookie objects for the "cookie" property:
 
           $props->set( 'content_length' => 3002 );
           my $length = $props->get('content_length'); # => 3002
@@ -171,22 +171,28 @@ METHODS
     $self = $props->clear
         This will remove all header properties. Returns this object itself.
 
-    @tags = $props->p3p
-    $props->p3p( @tags )
-        Represents P3P tags. The parameter can be an array or a
-        space-delimited string. Returns a list of P3P tags. (In scalar
-        context, returns the number of P3P tags.)
+    $props->attachment
+        Get or set the "attachment" property. Can be used to turn the page
+        into an attachment. Represents suggested name for the saved file.
 
-          $props->p3p(qw/CAO DSP LAW CURa/);
-          # or
-          $props->p3p('CAO DSP LAW CURa');
-
-          my @tags = $props->p3p; # => ("CAO", "DSP", "LAW", "CURa")
-          my $size = $props->p3p; # => 4
+          $props->attachment('genome.jpg');
+          my $filename = $props->attachment; # => "genome.jpg"
 
         In this case, the outgoing header will be formatted as:
 
-          P3P: policyref="/w3c/p3p.xml", CP="CAO DSP LAW CURa"
+          Content-Disposition: attachment; filename="genome.jpg"
+
+    $props->charset
+        Get or set the "charset" property.
+
+    $props->cookie( @cookies )
+    @cookies = $props->cookie
+        Get or set the "cookie" property. The parameter can be a list of
+        CGI::Cookie objects.
+
+    $props->push_cookie( @cookies )
+        Given a list of CGI::Cookie objects, appends them to the "cookie"
+        property.
 
     $props->expires
         The Expires header gives the date and time after which the entity
@@ -204,40 +210,50 @@ METHODS
           # at the indicated time & date
           $props->expires('Thu, 25 Apr 1999 00:40:33 GMT');
 
-    $props->attachment
-        Can be used to turn the page into an attachment. Represents
-        suggested name for the saved file.
-
-          $props->attachment('genome.jpg');
-          my $filename = $props->attachment; # => "genome.jpg"
-
-        In this case, the outgoing header will be formatted as:
-
-          Content-Disposition: attachment; filename="genome.jpg"
+    $props->location
+        Get or set the Location header.
 
     $props->nph
         If set to a true value, will issue the correct headers to work with
         a NPH (no-parse-header) script.
 
-    $props->push_cookie( @cookies )
-        Given a list of CGI::Cookie objects, appends them to the existing
-        "cookie" property.
+    @tags = $props->p3p
+    $props->p3p( @tags )
+        Get or set the "p3p" property. The parameter can be an array or a
+        space-delimited string. Returns a list of P3P tags. (In scalar
+        context, returns the number of P3P tags.)
+
+          $props->p3p(qw/CAO DSP LAW CURa/);
+          # or
+          $props->p3p('CAO DSP LAW CURa');
+
+          my @tags = $props->p3p; # => ("CAO", "DSP", "LAW", "CURa")
+          my $size = $props->p3p; # => 4
+
+        In this case, the outgoing header will be formatted as:
+
+          P3P: policyref="/w3c/p3p.xml", CP="CAO DSP LAW CURa"
 
     $props->push_p3p( @tags )
-        Given a list of P3P tags, appends them to the existing "p3p"
-        property.
+        Given a list of P3P tags, appends them to the "p3p" property.
 
-    $props->charset
-        Returns the character set sent to the browser.
+    $props->status
+        Get or set the Status header.
 
-    $props->cookie( @cookies )
-    @cookies = $props->cookie
-        Get or set the "cookie" property.
+    $props->target
+        Get or set the Window-Target header.
+
+    $props->type
+        Get or set the "type" property.
 
     $props->as_string
         Stringifies the header props. associated with this object. The
         header props. will be passed to CGI.pm's "header()" or "redirect()"
-        method.
+        method (It depends on the return value of "$props->handler"). It's
+        identicalt to:
+
+          my $handler = $props->handler; # => "header" or "redirect"
+          $props->query->$handler( $props->header );
 
 SEE ALSO
     CGI

@@ -493,6 +493,10 @@ expiration interval. The following forms are all valid for this field:
   # at the indicated time & date
   $props->expires('Thu, 25 Apr 1999 00:40:33 GMT');
 
+=item $props->location
+
+Get or set the Location header.
+
 =item $props->nph
 
 If set to a true value, will issue the correct headers to work with
@@ -521,6 +525,18 @@ In this case, the outgoing header will be formatted as:
 =item $props->push_p3p( @tags )
 
 Given a list of P3P tags, appends them to the C<p3p> property.
+
+=item $props->status
+
+Get or set the Status header.
+
+=item $props->target
+
+Get or set the Window-Target header.
+
+=item $props->type
+
+Get or set the C<type> property.
 
 =item $props->as_string
 
