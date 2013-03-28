@@ -20,12 +20,12 @@ SYNOPSIS
       );
 
       # inspect $header
-      $props->get('-type'); # => "text/plain"
-      $props->exists('-type'); # => true
+      $props->get('type'); # => "text/plain"
+      $props->exists('type'); # => true
 
       # update $header 
-      $props->set( -type => 'text/plain' ); # overwrite
-      $props->delete('-type'); # => "text/plain"
+      $props->set( type => 'text/plain' ); # overwrite
+      $props->delete('type'); # => "text/plain"
       $props->clear; # => $self
 
       $props->handler('redirect');
@@ -51,10 +51,12 @@ DESCRIPTION
     this module easily.
 
 METHODS
-    $props->new
+    $props = CGI::Header::Props->new
+        Create a new "CGI::Header::Props" object.
+
     $props->header
         Returns the header hash associated with this "CGI::Header::Props"
-        object.
+        object. This attribute defaults to a reference to an empty hash.
 
     $props->query
         Returns the query object associated with this "CGI::Header::Props"
@@ -69,7 +71,7 @@ METHODS
           $props->handler('redirect');
           $props->as_string; # invokes $props->query->redirect
 
-    $props->rehash
+    $self = $props->rehash
         Rebuilds the header hash to normalize property names without
         changing the reference. Returns this object itself. If property
         names aren't normalized, the methods listed below won't work as you
@@ -106,8 +108,8 @@ METHODS
         3. use underscores instead of dashes except for the first character
               'content-length' -> '-content_length'
 
-        CGI.pm's "header()" also accepts aliases of property names. This
-        module converts them as follows:
+        CGI.pm's "header()" method also accepts aliases of property names.
+        This module converts them as follows:
 
           # for CGI#header
           '-content_type'  -> '-type'
@@ -139,30 +141,30 @@ METHODS
         ($prop) is not case sensitive. You can use dashes as a replacement
         for underscores in property names.
 
-          $props->get('-content_length');
+          $props->get('content_length');
           $props->get('Content-Length');
 
         The $value argument may be a plain string or a reference to an array
         of CGI::Cookie objects for the "-cookie" property:
 
-          $props->set( '-content_length' => 3002 );
-          my $length = $props->get('-content_length'); # => 3002
+          $props->set( 'content_length' => 3002 );
+          my $length = $props->get('content_length'); # => 3002
 
           # $cookie1 and $cookie2 are CGI::Cookie objects
-          $props->set( -cookie => [$cookie1, $cookie2] );
-          my $cookies = $props->get('-cookie'); # => [$cookie1, $cookie2]
+          $props->set( cookie => [$cookie1, $cookie2] );
+          my $cookies = $props->get('cookie'); # => [$cookie1, $cookie2]
 
     $value = $props->delete( $prop )
         Deletes the specified property. Returns the value of the deleted
         property.
 
-          my $value = $props->delete('-content_disposition'); # => "inline"
+          my $value = $props->delete('content_disposition'); # => "inline"
 
     $bool = $props->exists( $prop )
         Returns a Boolean value telling whether the specified property
         exists.
 
-          if ( $props->exists('-etag') ) {
+          if ( $props->exists('etag') ) {
               ...
           }
 
@@ -213,17 +215,32 @@ METHODS
 
           Content-Disposition: attachment; filename="genome.jpg"
 
-    nph If set to a true value, will issue the correct headers to work with
+    $props->nph
+        If set to a true value, will issue the correct headers to work with
         a NPH (no-parse-header) script.
 
-    push_cookie
-    push_p3p
-    charset
-    cookie
-    as_string
+    $props->push_cookie( @cookies )
+        Given a list of CGI::Cookie objects, appends them to the existing
+        "cookie" property.
+
+    $props->push_p3p( @tags )
+        Given a list of P3P tags, appends them to the existing "p3p"
+        property.
+
+    $props->charset
+        Returns the character set sent to the browser.
+
+    $props->cookie( @cookies )
+    @cookies = $props->cookie
+        Get or set the "cookie" property.
+
+    $props->as_string
+        Stringifies the header props. associated with this object. The
+        header props. will be passed to CGI.pm's "header()" or "redirect()"
+        method.
 
 SEE ALSO
-    CGI::Application, CGI
+    CGI
 
 AUTHOR
     Ryo Anazawa (anazawa@cpan.org)

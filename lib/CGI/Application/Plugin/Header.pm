@@ -125,6 +125,17 @@ of your application):
 
 Returns a L<CGI::Header::Props> object associated with C<$cgiapp>.
 
+NOTE: This method updates C<CGI::Header::Props#handler> automatically,
+and so you shouldn't set the attribute manually.
+
+  # doesn't work as you expect
+  $cgiapp->header->handler('redirect');
+
+Use C<CGI::Application#header_type> instead:
+
+  $cgiapp->header_type('redirect');
+  $cgiapp->header->handler; # => "redirect"
+
 =item $value = $cgiapp->header( $prop )
 
 Returns the value of the specified property. It's identical to:
@@ -135,10 +146,6 @@ Returns the value of the specified property. It's identical to:
 
 Given key-value pairs of header props., merges them into the existing
 properties.
-
-A shortcut for:
-
-  $cgiapp->header->set( $prop => $value )
 
 =back
 

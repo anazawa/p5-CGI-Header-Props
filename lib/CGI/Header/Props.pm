@@ -303,12 +303,14 @@ this module easily.
 
 =over 4
 
-=item $props->new
+=item $props = CGI::Header::Props->new
+
+Create a new C<CGI::Header::Props> object.
 
 =item $props->header 
 
 Returns the header hash associated with this C<CGI::Header::Props>
-object.
+object. This attribute defaults to a reference to an empty hash.
 
 =item $props->query
 
@@ -324,7 +326,7 @@ header. This attribute defaults to C<header>.
   $props->handler('redirect');
   $props->as_string; # invokes $props->query->redirect
 
-=item $props->rehash
+=item $self = $props->rehash
 
 Rebuilds the header hash to normalize property names without changing
 the reference. Returns this object itself. If property names aren't
@@ -507,14 +509,9 @@ Get or set the C<cookie> property.
 
 =item $props->as_string
 
-Invokes the following method by default:
-
-  $props->query->header( $props->header );
-
-If C<< $props->handler >> is set to C<redirect>, invokes the following method
-instead:
-
-  $props->query->redirect( $props->header );
+Stringifies the header props. associated with this object.
+The header props. will be passed to CGI.pm's C<header()> or C<redirect()>
+method.
 
 =back
 
