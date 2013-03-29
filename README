@@ -171,12 +171,33 @@ METHODS
     $self = $props->clear
         This will remove all header properties. Returns this object itself.
 
+    $props->as_string
+        Stringifies the header props. associated with this object. The
+        header props. will be passed to CGI.pm's "header()" or "redirect()"
+        method (It depends on the return value of "$props->handler"). It's
+        identicalt to:
+
+          my $handler = $props->handler; # => "header" or "redirect"
+          $props->query->$handler( $props->header );
+
+   PROPERTIES
+    The following methods were named after property names recognized by
+    CGI.pm's "header" method. Most of these methods can both be used to read
+    and to set the value of a property.
+
+    If you pass an argument to the method, the property value will be set,
+    and also the current object itself will be returned ; therefore you can
+    chain methods as follows:
+
+      $props->type('text/html')->charset('utf-8');
+
+    If no argument is supplied, the property value will be returned. If the
+    given property doesn't exist, "undef" will be returned.
+
     $self = $props->attachment( $filename )
     $filename = $props->attachment
         Get or set the "attachment" property. Can be used to turn the page
-        into an attachment. Represents suggested name for the saved file. If
-        set to a true value, the "content_disposition" property will be
-        removed automatically.
+        into an attachment. Represents suggested name for the saved file.
 
           $props->attachment('genome.jpg');
           my $filename = $props->attachment; # => "genome.jpg"
@@ -193,8 +214,7 @@ METHODS
     $self = $props->cookie( @cookies )
     @cookies = $props->cookie
         Get or set the "cookie" property. The parameter can be a list of
-        CGI::Cookie objects. If set to a true value, the "date" property
-        will be removed automatically.
+        CGI::Cookie objects.
 
     $props->push_cookie( @cookies )
         Given a list of CGI::Cookie objects, appends them to the "cookie"
@@ -236,12 +256,12 @@ METHODS
         NOTE: If the "-nph" pragma is enabled, you can't set this property
         to a false value.
 
-          if ( $props->query->nph ) { # use CGI '-nph';
+          if ( $props->query->nph ) { # <=> "use CGI '-nph';"
               $props->nph(0); # die "The '-nph' pragma is enabled'
           }
 
-    @tags = $props->p3p
     $self = $props->p3p( @tags )
+    @tags = $props->p3p
         Get or set the "p3p" property. The parameter can be an array or a
         space-delimited string. Returns a list of P3P tags. (In scalar
         context, returns the number of P3P tags.)
@@ -279,15 +299,6 @@ METHODS
 
           $props->type('text/html');
 
-    $props->as_string
-        Stringifies the header props. associated with this object. The
-        header props. will be passed to CGI.pm's "header()" or "redirect()"
-        method (It depends on the return value of "$props->handler"). It's
-        identicalt to:
-
-          my $handler = $props->handler; # => "header" or "redirect"
-          $props->query->$handler( $props->header );
-
 SEE ALSO
     CGI
 
@@ -297,4 +308,14 @@ AUTHOR
 LICENSE
     This module is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself. See perlartistic.
+
+POD ERRORS
+    Hey! The above document had some coding errors, which are explained
+    below:
+
+    Around line 477:
+        You forgot a '=back' before '=head4'
+
+    Around line 493:
+        '=item' outside of any '=over'
 
