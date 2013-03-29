@@ -36,14 +36,14 @@ isa_ok $props->header, 'HASH';
 is $props->handler, 'header';
 
 my @data = (
-    '-foo'           => '-foo',
-    'Foo'            => '-foo',
-    '-foo_bar'       => '-foo_bar',
-    'Foo-Bar'        => '-foo_bar',
-    '-cookies'       => '-cookie',
-    '-set_cookie'    => '-cookie',
-    '-window_target' => '-target',
-    '-content_type'  => '-type',
+    '-foo'           => 'foo',
+    'Foo'            => 'foo',
+    '-foo_bar'       => 'foo-bar',
+    'Foo-Bar'        => 'foo-bar',
+    '-cookies'       => 'cookie',
+    '-set_cookie'    => 'cookie',
+    '-window_target' => 'target',
+    '-content_type'  => 'type',
 );
 
 while ( my ($input, $expected) = splice @data, 0, 2 ) {
@@ -79,7 +79,7 @@ is_deeply $props->rehash->header, {
     -cookie  => 'ID=123456; path=/',
     -expires => '+3d',
     -foo     => 'bar',
-    -foo_bar => 'baz',
+    '-foo-bar' => 'baz',
     -target  => 'ResultsWindow',
 };
 

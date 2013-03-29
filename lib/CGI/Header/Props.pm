@@ -7,13 +7,25 @@ use Carp qw/croak/;
 our $VERSION = '0.01';
 
 our %PROPERTY_ALIAS = (
-    -content_type  => '-type',
-    -cookies       => '-cookie',
-    -set_cookie    => '-cookie',
-    -uri           => '-location',
-    -url           => '-location',
-    -window_target => '-target',
+    'content-type'  => 'type',
+    'cookies'       => 'cookie',
+    'set-cookie'    => 'cookie',
+    'uri'           => 'location',
+    'url'           => 'location',
+    'window-target' => 'target',
 );
+
+sub get_alias {
+    $PROPERTY_ALIAS{ $_[0] };
+}
+
+sub normalize {
+    my $class = shift;
+    my $prop = lc shift;
+    $prop =~ s/^-//;
+    $prop =~ tr/_/-/;
+    $class->get_alias($prop) || $prop;
+}
 
 sub new {
     my $class = shift;
@@ -41,18 +53,12 @@ sub _build_query {
     CGI::self_or_default();
 }
 
-sub normalize {
-    my $self = shift;
-    my $prop = _lc( shift );
-    $PROPERTY_ALIAS{$prop} || $prop;
-}
-
 sub rehash {
     my $self   = shift;
     my $header = $self->{header};
 
     for my $key ( keys %{$header} ) {
-        my $prop = $self->normalize( $key );
+        my $prop = '-' . $self->normalize( $key );
         next if $key eq $prop; # $key is normalized
         croak "Property '$prop' already exists" if exists $header->{$prop};
         $header->{$prop} = delete $header->{$key}; # rename $key to $prop
@@ -64,25 +70,25 @@ sub rehash {
 sub get {
     my ( $self, $key ) = @_;
     my $prop = $self->normalize( $key );
-    $self->{header}->{$prop};
+    $self->{header}->{"-$prop"};
 }
 
 sub set {
     my ( $self, $key, $value ) = @_;
     my $prop = $self->normalize( $key );
-    $self->{header}->{$prop} = $value;
+    $self->{header}->{"-$prop"} = $value;
 }
 
 sub exists {
     my ( $self, $key ) = @_;
     my $prop = $self->normalize( $key );
-    exists $self->{header}->{$prop};
+    exists $self->{header}->{"-$prop"};
 }
 
 sub delete {
     my ( $self, $key ) = @_;
     my $prop = $self->normalize( $key );
-    delete $self->{header}->{$prop};
+    delete $self->{header}->{"-$prop"};
 }
 
 sub push_cookie {
