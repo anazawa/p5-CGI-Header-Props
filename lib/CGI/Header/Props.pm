@@ -7,50 +7,24 @@ use Carp qw/croak/;
 our $VERSION = '0.01';
 
 our %PROPERTY_ALIAS = (
-    header => {
-        -content_type  => '-type',
-        -cookies       => '-cookie',
-        -set_cookie    => '-cookie',
-        -window_target => '-target',
-    },
-    redirect => {
-        -content_type  => '-type',
-        -cookies       => '-cookie',
-        -set_cookie    => '-cookie',
-        -uri           => '-location',
-        -url           => '-location',
-        -window_target => '-target',
-    },
+    -content_type  => '-type',
+    -cookies       => '-cookie',
+    -set_cookie    => '-cookie',
+    -uri           => '-location',
+    -url           => '-location',
+    -window_target => '-target',
 );
 
 sub new {
     my $class = shift;
-
-    bless {
-        handler => 'header',
-        header => {},
-        @_,
-    }, $class;
+    bless { header => {}, @_ }, $class;
 }
 
 sub handler {
     my $self = shift;
-
-    if ( @_ ) {
-        my $handler = shift;
-
-        if ( $handler ne 'header' and $handler ne 'redirect' ) {
-            croak "Invalid handler '$handler' passed to handler()";
-        }
-        elsif ( $handler ne $self->{handler} ) {
-            $self->{handler} = $handler;
-            $self->rehash if $handler eq 'redirect';
-        }
-
-        return $self;
-    }
-
-    $self->{handler};
+    return $self->{handler} ||= 'header' unless @_;
+    $self->{handler} = shift;
+    $self;
 }
 
 sub header {
@@ -70,8 +44,7 @@ sub _build_query {
 sub normalize {
     my $self = shift;
     my $prop = _lc( shift );
-    my $handler = $self->{handler};
-    $PROPERTY_ALIAS{$handler}{$prop} || $prop;
+    $PROPERTY_ALIAS{$prop} || $prop;
 }
 
 sub rehash {
@@ -124,14 +97,13 @@ sub push_p3p {
 
 sub _push {
     my ( $self, $prop, @values ) = @_;
-    my $header = $self->{header};
 
-    if ( my $value = $header->{$prop} ) {
+    if ( my $value = $self->{header}->{$prop} ) {
         return push @{$value}, @values if ref $value eq 'ARRAY';
         unshift @values, $value;
     }
 
-    $header->{$prop} = @values > 1 ? \@values : $values[0];
+    $self->{header}->{$prop} = @values > 1 ? \@values : $values[0];
 
     scalar @values;
 }
@@ -207,8 +179,8 @@ sub p3p {
 
 sub as_string {
     my $self = shift;
-    my $handler = $self->{handler};
-    $self->query->$handler( $self->{header} );
+    my $handler = $self->handler;
+    $handler eq 'none' ? q{} : $self->query->$handler( $self->{header} );
 }
 
 sub _lc {

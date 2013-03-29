@@ -1,8 +1,8 @@
 use strict;
 use CGI;
 use CGI::Header::Props;
-use Test::Exception;
-use Test::More tests => 56;
+#use Test::Exception;
+use Test::More tests => 55;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -61,7 +61,7 @@ is $props->handler, 'redirect';
 is_deeply $props->header,
     { -location => 'http://www.example.com/' }, 'should be rehashed';
 
-throws_ok { $props->handler('param') } qr{Invalid handler};
+#throws_ok { $props->handler('param') } qr{Invalid handler};
 
 %{ $props->header } = (
     '-Charset'      => 'utf-8',
