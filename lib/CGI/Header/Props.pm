@@ -300,7 +300,7 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
 
 =head1 VERSION
 
-This document refers to CGI::Header::Props version 0.01;
+This document refers to CGI::Header::Props version 0.01.
 
 =head1 DESCRIPTION
 
@@ -411,7 +411,7 @@ If a property name is duplicated, throws an exception:
 
 =item $value = $props->get( $prop )
 
-=item $props->set( $prop => $value )
+=item $value = $props->set( $prop => $value )
 
 Get or set the value of the header property.
 The property name (C<$prop>) is not case sensitive.
@@ -453,6 +453,8 @@ This will remove all header properties. Returns this object itself.
 Get or set the C<attachment> property.
 Can be used to turn the page into an attachment.
 Represents suggested name for the saved file.
+If set to a true value, the C<content_disposition> property will be removed
+automatically.
 
   $props->attachment('genome.jpg');
   my $filename = $props->attachment; # => "genome.jpg"
@@ -463,7 +465,8 @@ In this case, the outgoing header will be formatted as:
 
 =item $props->charset
 
-Get or set the C<charset> property.
+Get or set the C<charset> property. Represents the character set sent to
+the browser.
 
 =item $props->cookie( @cookies )
 
@@ -471,6 +474,7 @@ Get or set the C<charset> property.
 
 Get or set the C<cookie> property.
 The parameter can be a list of L<CGI::Cookie> objects.
+If set to a true value, the C<date> property will be removed automatically.
 
 =item $props->push_cookie( @cookies )
 
@@ -479,6 +483,7 @@ C<cookie> property.
 
 =item $props->expires
 
+Get or set the C<expires> property.
 The Expires header gives the date and time after which the entity
 should be considered stale. You can specify an absolute or relative
 expiration interval. The following forms are all valid for this field:
@@ -497,10 +502,22 @@ expiration interval. The following forms are all valid for this field:
 
 Get or set the Location header.
 
+  $props->location('http://somewhere.else/in/movie/land');
+
 =item $props->nph
 
+Get or set the C<nph> property.
 If set to a true value, will issue the correct headers to work with
 a NPH (no-parse-header) script.
+
+  $props->nph(1);
+
+NOTE: If the C<-nph> pragma is enabled, you can't set this property to
+a false value.
+
+  if ( $props->query->nph ) {
+      $props->nph(0); # die "The '-nph' pragma is enabled'
+  }
 
 =item @tags = $props->p3p
 
@@ -530,13 +547,20 @@ Given a list of P3P tags, appends them to the C<p3p> property.
 
 Get or set the Status header.
 
+  $props->status('304 Not Modified');
+
 =item $props->target
 
 Get or set the Window-Target header.
 
+  $props->target('ResultsWindow');
+
 =item $props->type
 
-Get or set the C<type> property.
+Get or set the C<type> property. Represents the media type of the message
+content.
+
+  $props->type('text/html');
 
 =item $props->as_string
 

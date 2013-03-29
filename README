@@ -40,7 +40,7 @@ SYNOPSIS
       $props->header; # same reference as $header
 
 VERSION
-    This document refers to CGI::Header::Props version 0.01;
+    This document refers to CGI::Header::Props version 0.01.
 
 DESCRIPTION
     This module helps you handle CGI.pm-compatible HTTP header properties.
@@ -136,7 +136,7 @@ METHODS
           $props->rehash; # die "Property "-type' already exists"
 
     $value = $props->get( $prop )
-    $props->set( $prop => $value )
+    $value = $props->set( $prop => $value )
         Get or set the value of the header property. The property name
         ($prop) is not case sensitive. You can use dashes as a replacement
         for underscores in property names.
@@ -173,7 +173,9 @@ METHODS
 
     $props->attachment
         Get or set the "attachment" property. Can be used to turn the page
-        into an attachment. Represents suggested name for the saved file.
+        into an attachment. Represents suggested name for the saved file. If
+        set to a true value, the "content_disposition" property will be
+        removed automatically.
 
           $props->attachment('genome.jpg');
           my $filename = $props->attachment; # => "genome.jpg"
@@ -183,22 +185,24 @@ METHODS
           Content-Disposition: attachment; filename="genome.jpg"
 
     $props->charset
-        Get or set the "charset" property.
+        Get or set the "charset" property. Represents the character set sent
+        to the browser.
 
     $props->cookie( @cookies )
     @cookies = $props->cookie
         Get or set the "cookie" property. The parameter can be a list of
-        CGI::Cookie objects.
+        CGI::Cookie objects. If set to a true value, the "date" property
+        will be removed automatically.
 
     $props->push_cookie( @cookies )
         Given a list of CGI::Cookie objects, appends them to the "cookie"
         property.
 
     $props->expires
-        The Expires header gives the date and time after which the entity
-        should be considered stale. You can specify an absolute or relative
-        expiration interval. The following forms are all valid for this
-        field:
+        Get or set the "expires" property. The Expires header gives the date
+        and time after which the entity should be considered stale. You can
+        specify an absolute or relative expiration interval. The following
+        forms are all valid for this field:
 
           $props->expires('+30s'); # 30 seconds from now
           $props->expires('+10m'); # ten minutes from now
@@ -213,9 +217,20 @@ METHODS
     $props->location
         Get or set the Location header.
 
+          $props->location('http://somewhere.else/in/movie/land');
+
     $props->nph
-        If set to a true value, will issue the correct headers to work with
-        a NPH (no-parse-header) script.
+        Get or set the "nph" property. If set to a true value, will issue
+        the correct headers to work with a NPH (no-parse-header) script.
+
+          $props->nph(1);
+
+        NOTE: If the "-nph" pragma is enabled, you can't set this property
+        to a false value.
+
+          if ( $props->query->nph ) {
+              $props->nph(0); # die "The '-nph' pragma is enabled'
+          }
 
     @tags = $props->p3p
     $props->p3p( @tags )
@@ -240,11 +255,18 @@ METHODS
     $props->status
         Get or set the Status header.
 
+          $props->status('304 Not Modified');
+
     $props->target
         Get or set the Window-Target header.
 
+          $props->target('ResultsWindow');
+
     $props->type
-        Get or set the "type" property.
+        Get or set the "type" property. Represents the media type of the
+        message content.
+
+          $props->type('text/html');
 
     $props->as_string
         Stringifies the header props. associated with this object. The
