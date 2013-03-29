@@ -464,6 +464,32 @@ Returns a Boolean value telling whether the specified property exists.
 
 This will remove all header properties. Returns this object itself.
 
+=item $props->as_string
+
+Stringifies the header props. associated with this object.
+The header props. will be passed to CGI.pm's C<header()> or C<redirect()>
+method (It depends on the return value of C<< $props->handler >>).
+It's identicalt to:
+
+  my $handler = $props->handler; # => "header" or "redirect"
+  $props->query->$handler( $props->header );
+
+=head4 PROPERTIES
+
+The following methods were named after property names recognized by
+CGI.pm's C<header> method.
+Most of these methods can both be used to read and to set the value of
+a property.
+
+If you pass an argument to the method, the property value will be set,
+and also the current object itself will be returned ; therefore you
+can chain methods as follows:
+
+  $props->type('text/html')->charset('utf-8');
+
+If no argument is supplied, the property value will be returned.
+If the given property doesn't exist, C<undef> will be returned.
+
 =item $self = $props->attachment( $filename )
 
 =item $filename = $props->attachment
@@ -471,8 +497,6 @@ This will remove all header properties. Returns this object itself.
 Get or set the C<attachment> property.
 Can be used to turn the page into an attachment.
 Represents suggested name for the saved file.
-If set to a true value, the C<content_disposition> property will be removed
-automatically.
 
   $props->attachment('genome.jpg');
   my $filename = $props->attachment; # => "genome.jpg"
@@ -494,7 +518,6 @@ the browser.
 
 Get or set the C<cookie> property.
 The parameter can be a list of L<CGI::Cookie> objects.
-If set to a true value, the C<date> property will be removed automatically.
 
 =item $props->push_cookie( @cookies )
 
@@ -543,13 +566,13 @@ a NPH (no-parse-header) script.
 NOTE: If the C<-nph> pragma is enabled, you can't set this property to
 a false value.
 
-  if ( $props->query->nph ) { # use CGI '-nph';
+  if ( $props->query->nph ) { # <=> "use CGI '-nph';"
       $props->nph(0); # die "The '-nph' pragma is enabled'
   }
 
-=item @tags = $props->p3p
-
 =item $self = $props->p3p( @tags )
+
+=item @tags = $props->p3p
 
 Get or set the C<p3p> property. The parameter can be an array or a
 space-delimited string.
@@ -596,15 +619,6 @@ content.
 
   $props->type('text/html');
 
-=item $props->as_string
-
-Stringifies the header props. associated with this object.
-The header props. will be passed to CGI.pm's C<header()> or C<redirect()>
-method (It depends on the return value of C<< $props->handler >>).
-It's identicalt to:
-
-  my $handler = $props->handler; # => "header" or "redirect"
-  $props->query->$handler( $props->header );
 
 =back
 
