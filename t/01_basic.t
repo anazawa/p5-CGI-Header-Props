@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 49;
+use Test::More tests => 65;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -50,13 +50,13 @@ while ( my ($input, $expected) = splice @data, 0, 2 ) {
     is $props->normalize($input), $expected;
 }
 
-$props->set( foo => 'bar' );
+is $props->set( foo => 'bar' ), 'bar';
 is $props->get('foo'), 'bar';
 ok $props->exists('foo');
 is $props->delete('foo'), 'bar';
 
 $props->clear->set( uri => 'http://www.example.com/' );
-$props->handler('redirect');
+is $props->handler('redirect'), $props;
 is $props->handler, 'redirect';
 is_deeply $props->header,
     { -location => 'http://www.example.com/' }, 'should be rehashed';
@@ -83,21 +83,17 @@ is_deeply $props->rehash->header, {
     -target  => 'ResultsWindow',
 };
 
-$props->clear;
-
-$props->handler('header');
-is $props->as_string,
+is $props->clear->handler('header')->as_string,
     "Content-Type: text/html; charset=ISO-8859-1$CGI::CRLF$CGI::CRLF";
 
-$props->handler('redirect');
-is $props->as_string,
+is $props->clear->handler('redirect')->as_string,
     "Status: 302 Found$CGI::CRLF" .
     "Location: http://localhost$CGI::CRLF$CGI::CRLF";
 
 
 # nph
 
-$props->nph(1);
+is $props->nph(1), $props;
 ok $props->nph;
 
 {
@@ -111,7 +107,7 @@ ok $props->nph;
 # attachment
 
 $props->set( content_disposition => 'inline' );
-$props->attachment('genome.jpg');
+is $props->attachment('genome.jpg'), $props;
 is $props->attachment, 'genome.jpg';
 ok !$props->exists('content_disposition'),
     '-content_disposition should be deleted';
@@ -120,28 +116,28 @@ ok !$props->exists('content_disposition'),
 # expires
 
 $props->set( date => 'Thu, 25 Apr 1999 00:40:33 GMT' );
-$props->expires('+3d');
+is $props->expires('+3d'), $props;
 is $props->expires, '+3d';
 ok !$props->exists('date'), '-date should be deleted';
 
 
 # p3p
 
-$props->p3p(qw/CAO DSP LAW CURa/);
+is $props->p3p(qw/CAO DSP LAW CURa/), $props;
 is_deeply [ $props->p3p ], [qw/CAO DSP LAW CURa/];
 
-$props->p3p('CAO DSP LAW CURa');
+is $props->p3p('CAO DSP LAW CURa'), $props;
 is_deeply [ $props->p3p ], [qw/CAO DSP LAW CURa/];
 
 
 # cookie
 
 $props->set( date => 'Thu, 25 Apr 1999 00:40:33 GMT' );
-$props->cookie('foo');
+is $props->cookie('foo'), $props;
 is $props->cookie, 'foo';
 ok !$props->exists('date'), '-date should be deleted';
 
-$props->cookie(qw/foo bar baz/);
+is $props->cookie(qw/foo bar baz/), $props;
 is_deeply [ $props->cookie ], [qw/foo bar baz/];
 
 $props->delete('cookie');
@@ -153,35 +149,36 @@ is_deeply [ $props->cookie ], [qw/foo bar baz/];
 
 # charset
 
-$props->charset(undef);
+is $props->charset(undef), $props;
 is $props->charset, 'ISO-8859-1';
 
-$props->charset('utf-8');
+is $props->charset('utf-8'), $props;
 is $props->charset, 'utf-8';
 
-$props->charset(q{});
+is $props->charset(q{}), $props;
 is $props->charset, q{};
 
 
 # type
 
-$props->type('text/plain');
+is $props->type('text/plain'), $props;
 is $props->type, 'text/plain';
 
 
 # location
 
-$props->location('http://www.example.com/');
+is $props->location('http://www.example.com/'), $props;
 is $props->location, 'http://www.example.com/';
 
 
 # target
 
-$props->target('ResultsWindow');
+is $props->target('ResultsWindow'), $props;
 is $props->target, 'ResultsWindow';
 
 
 # status
 
-$props->status('304 Not Modified');
+is $props->status('304 Not Modified'), $props;
 is $props->status, '304 Not Modified';
+

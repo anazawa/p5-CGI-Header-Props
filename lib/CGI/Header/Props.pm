@@ -47,7 +47,7 @@ sub handler {
             $self->rehash if $handler eq 'redirect';
         }
 
-        return $handler;
+        return $self;
     }
 
     $self->{handler};
@@ -150,9 +150,15 @@ BEGIN {
     for my $method (qw/location status target type/) {
         my $prop = "-$method";
         my $code = sub {
-            my $self = shift;
-            return $self->{header}->{$prop} = shift if @_;
-            return $self->{header}->{$prop};
+            my $self   = shift;
+            my $header = $self->{header};
+
+            if ( @_ ) {
+                $header->{$prop} = shift;
+                return $self;
+            }
+
+            $header->{$prop};
         };
 
         no strict 'refs';
@@ -167,16 +173,22 @@ sub attachment {
     if ( @_ ) {
         my $attachment = shift;
         delete $header->{-content_disposition} if $attachment;
-        return $header->{-attachment} = $attachment;
+        $header->{-attachment} = $attachment;
+        return $self;
     }
 
     $header->{-attachment};
 }
 
 sub charset {
-    my $self = shift;
+    my $self   = shift;
     my $header = $self->{header};
-    return $header->{-charset} = shift if @_;
+
+    if ( @_ ) {
+        $header->{-charset} = shift if @_;
+        return $self;
+    }
+
     defined $header->{-charset} ? $header->{-charset} : $self->query->charset;
 }
 
@@ -187,7 +199,8 @@ sub cookie {
     if ( @_ ) {
         my $cookie = @_ > 1 ? [ @_ ] : shift;
         delete $header->{-date} if $cookie;
-        return $header->{-cookie} = $cookie;
+        $header->{-cookie} = $cookie;
+        return $self;
     }
     elsif ( my $cookie = $header->{-cookie} ) {
         return ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
@@ -203,7 +216,8 @@ sub expires {
     if ( @_ ) {
         my $expires = shift;
         delete $header->{-date} if $expires;
-        return $header->{-expires} = $expires;
+        $header->{-expires} = $expires;
+        return $self;
     }
 
     $header->{-expires};
@@ -218,7 +232,8 @@ sub nph {
         my $nph = shift;
         croak "The '-nph' pragma is enabled" if !$nph and $NPH;
         delete @{ $header }{qw/-date -server/} if $nph;
-        return $header->{-nph} = $nph;
+        $header->{-nph} = $nph;
+        return $self;
     }
 
     $NPH or $header->{-nph};
@@ -229,7 +244,8 @@ sub p3p {
     my $header = $self->{header};
 
     if ( @_ ) {
-        return $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
+        $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
+        return $self;
     }
     elsif ( my $tags = $header->{-p3p} ) {
         return ref $tags eq 'ARRAY' ? @{$tags} : split ' ', $tags;
@@ -423,8 +439,8 @@ You can use dashes as a replacement for underscores in property names.
 The C<$value> argument may be a plain string or a reference to an array
 of L<CGI::Cookie> objects for the C<cookie> property:
 
-  $props->set( 'content_length' => 3002 );
-  my $length = $props->get('content_length'); # => 3002
+  $props->set( 'Content-Length' => 3002 );
+  my $length = $props->get('Content-Length'); # => 3002
 
   # $cookie1 and $cookie2 are CGI::Cookie objects
   $props->set( cookie => [$cookie1, $cookie2] );
@@ -434,13 +450,13 @@ of L<CGI::Cookie> objects for the C<cookie> property:
 
 Deletes the specified property. Returns the value of the deleted property.
 
-  my $value = $props->delete('content_disposition'); # => "inline"
+  my $value = $props->delete('Content-Disposition'); # => "inline"
 
 =item $bool = $props->exists( $prop )
 
 Returns a Boolean value telling whether the specified property exists.
 
-  if ( $props->exists('etag') ) {
+  if ( $props->exists('ETag') ) {
       ...
   }
 
@@ -448,7 +464,9 @@ Returns a Boolean value telling whether the specified property exists.
 
 This will remove all header properties. Returns this object itself.
 
-=item $props->attachment
+=item $self = $props->attachment( $filename )
+
+=item $filename = $props->attachment
 
 Get or set the C<attachment> property.
 Can be used to turn the page into an attachment.
@@ -463,12 +481,14 @@ In this case, the outgoing header will be formatted as:
 
   Content-Disposition: attachment; filename="genome.jpg"
 
-=item $props->charset
+=item $self = $props->charset( $character_set )
+
+=item $character_set = $props->charset
 
 Get or set the C<charset> property. Represents the character set sent to
 the browser.
 
-=item $props->cookie( @cookies )
+=item $self = $props->cookie( @cookies )
 
 =item @cookies = $props->cookie
 
@@ -481,7 +501,9 @@ If set to a true value, the C<date> property will be removed automatically.
 Given a list of L<CGI::Cookie> objects, appends them to the
 C<cookie> property.
 
-=item $props->expires
+=item $self = $props->expires( $format )
+
+=item $format = $props->expires
 
 Get or set the C<expires> property.
 The Expires header gives the date and time after which the entity
@@ -498,13 +520,19 @@ expiration interval. The following forms are all valid for this field:
   # at the indicated time & date
   $props->expires('Thu, 25 Apr 1999 00:40:33 GMT');
 
-=item $props->location
+If set to a true value, the C<date> property will be removed automatically.
+
+=item $self = $props->location( $url )
+
+=item $url = $props->location
 
 Get or set the Location header.
 
   $props->location('http://somewhere.else/in/movie/land');
 
-=item $props->nph
+=item $self = $props->nph( $bool )
+
+=item $bool = $props->nph
 
 Get or set the C<nph> property.
 If set to a true value, will issue the correct headers to work with
@@ -515,13 +543,13 @@ a NPH (no-parse-header) script.
 NOTE: If the C<-nph> pragma is enabled, you can't set this property to
 a false value.
 
-  if ( $props->query->nph ) {
+  if ( $props->query->nph ) { # use CGI '-nph';
       $props->nph(0); # die "The '-nph' pragma is enabled'
   }
 
 =item @tags = $props->p3p
 
-=item $props->p3p( @tags )
+=item $self = $props->p3p( @tags )
 
 Get or set the C<p3p> property. The parameter can be an array or a
 space-delimited string.
@@ -543,19 +571,25 @@ In this case, the outgoing header will be formatted as:
 
 Given a list of P3P tags, appends them to the C<p3p> property.
 
-=item $props->status
+=item $self = $props->status( $status )
+
+=item $status = $props->status
 
 Get or set the Status header.
 
   $props->status('304 Not Modified');
 
-=item $props->target
+=item $self = $props->target( $window_target )
+
+=item $window_target = $props->target
 
 Get or set the Window-Target header.
 
   $props->target('ResultsWindow');
 
-=item $props->type
+=item $self = $props->type( $media_type )
+
+=item $media_type = $props->type
 
 Get or set the C<type> property. Represents the media type of the message
 content.
