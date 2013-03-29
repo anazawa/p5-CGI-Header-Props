@@ -147,18 +147,24 @@ sub clear {
 }
 
 BEGIN {
-    for my $method (qw/location status target type/) {
+    my @methods = qw(
+        attachment
+        charset
+        expires
+        location
+        nph
+        status
+        target
+        type
+    );
+
+    for my $method ( @methods ) {
         my $prop = "-$method";
         my $code = sub {
-            my $self   = shift;
-            my $header = $self->{header};
-
-            if ( @_ ) {
-                $header->{$prop} = shift;
-                return $self;
-            }
-
-            $header->{$prop};
+            my $self = shift;
+            return $self->{header}->{$prop} unless @_;
+            $self->{header}->{$prop} = shift;
+            $self;
         };
 
         no strict 'refs';
@@ -166,92 +172,37 @@ BEGIN {
     }
 }
 
-sub attachment {
-    my $self   = shift;
-    my $header = $self->{header};
-
-    if ( @_ ) {
-        my $attachment = shift;
-        delete $header->{-content_disposition} if $attachment;
-        $header->{-attachment} = $attachment;
-        return $self;
-    }
-
-    $header->{-attachment};
-}
-
-sub charset {
-    my $self   = shift;
-    my $header = $self->{header};
-
-    if ( @_ ) {
-        $header->{-charset} = shift if @_;
-        return $self;
-    }
-
-    defined $header->{-charset} ? $header->{-charset} : $self->query->charset;
-}
-
 sub cookie {
-    my $self   = shift;
-    my $header = $self->{header};
+    my $self = shift;
 
     if ( @_ ) {
-        my $cookie = @_ > 1 ? [ @_ ] : shift;
-        delete $header->{-date} if $cookie;
-        $header->{-cookie} = $cookie;
-        return $self;
+        $self->{header}->{-cookie} = @_ > 1 ? [ @_ ] : shift;
     }
-    elsif ( my $cookie = $header->{-cookie} ) {
+    elsif ( my $cookie = $self->{header}->{-cookie} ) {
         return ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
     }
-
-    return;
-}
-
-sub expires {
-    my $self   = shift;
-    my $header = $self->{header};
-
-    if ( @_ ) {
-        my $expires = shift;
-        delete $header->{-date} if $expires;
-        $header->{-expires} = $expires;
-        return $self;
+    else {
+        return;
     }
 
-    $header->{-expires};
-}
-
-sub nph {
-    my $self   = shift;
-    my $header = $self->{header};
-    my $NPH    = $self->query->nph; # => $CGI::NPH
-
-    if ( @_ ) {
-        my $nph = shift;
-        croak "The '-nph' pragma is enabled" if !$nph and $NPH;
-        delete @{ $header }{qw/-date -server/} if $nph;
-        $header->{-nph} = $nph;
-        return $self;
-    }
-
-    $NPH or $header->{-nph};
+    $self;
 }
 
 sub p3p {
-    my $self   = shift;
-    my $header = $self->{header};
+    my $self = shift;
 
     if ( @_ ) {
-        $header->{-p3p} = @_ > 1 ? [ @_ ] : shift;
-        return $self;
+        $self->{header}->{-p3p} = @_ > 1 ? [ @_ ] : shift;
     }
-    elsif ( my $tags = $header->{-p3p} ) {
-        return ref $tags eq 'ARRAY' ? @{$tags} : split ' ', $tags;
+    elsif ( my $tags = $self->{header}->{-p3p} ) {
+        my @tags = ref $tags eq 'ARRAY' ? @{$tags} : $tags;
+        return map { split ' ', $_ } @tags;
+    }
+    else {
+        return;
     }
 
-    return;
+    $self;
 }
 
 sub as_string {
@@ -474,6 +425,8 @@ It's identicalt to:
   my $handler = $props->handler; # => "header" or "redirect"
   $props->query->$handler( $props->header );
 
+=back
+
 =head4 PROPERTIES
 
 The following methods were named after property names recognized by
@@ -489,6 +442,8 @@ can chain methods as follows:
 
 If no argument is supplied, the property value will be returned.
 If the given property doesn't exist, C<undef> will be returned.
+
+=over 4
 
 =item $self = $props->attachment( $filename )
 

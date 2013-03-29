@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 65;
+use Test::More tests => 56;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -96,29 +96,17 @@ is $props->clear->handler('redirect')->as_string,
 is $props->nph(1), $props;
 ok $props->nph;
 
-{
-    local $CGI::NPH = 1;
-    $props->delete('nph');
-    ok $props->nph;
-    throws_ok { $props->nph(0) } qr{'-nph' pragma is enabled};
-}
-
 
 # attachment
 
-$props->set( content_disposition => 'inline' );
 is $props->attachment('genome.jpg'), $props;
 is $props->attachment, 'genome.jpg';
-ok !$props->exists('content_disposition'),
-    '-content_disposition should be deleted';
 
 
 # expires
 
-$props->set( date => 'Thu, 25 Apr 1999 00:40:33 GMT' );
 is $props->expires('+3d'), $props;
 is $props->expires, '+3d';
-ok !$props->exists('date'), '-date should be deleted';
 
 
 # p3p
@@ -132,10 +120,8 @@ is_deeply [ $props->p3p ], [qw/CAO DSP LAW CURa/];
 
 # cookie
 
-$props->set( date => 'Thu, 25 Apr 1999 00:40:33 GMT' );
 is $props->cookie('foo'), $props;
 is $props->cookie, 'foo';
-ok !$props->exists('date'), '-date should be deleted';
 
 is $props->cookie(qw/foo bar baz/), $props;
 is_deeply [ $props->cookie ], [qw/foo bar baz/];
@@ -149,15 +135,8 @@ is_deeply [ $props->cookie ], [qw/foo bar baz/];
 
 # charset
 
-is $props->charset(undef), $props;
-is $props->charset, 'ISO-8859-1';
-
 is $props->charset('utf-8'), $props;
 is $props->charset, 'utf-8';
-
-is $props->charset(q{}), $props;
-is $props->charset, q{};
-
 
 # type
 
