@@ -1,8 +1,8 @@
 use strict;
 use CGI;
 use CGI::Header::Props;
-#use Test::Exception;
-use Test::More tests => 55;
+use Test::Exception;
+use Test::More tests => 57;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -89,6 +89,10 @@ is $props->clear->handler('header')->as_string,
 is $props->clear->handler('redirect')->as_string,
     "Status: 302 Found$CGI::CRLF" .
     "Location: http://localhost$CGI::CRLF$CGI::CRLF";
+
+is $props->handler('none')->as_string, q{};
+
+throws_ok { $props->handler('param')->as_string } qr{Invalid handler};
 
 
 # nph

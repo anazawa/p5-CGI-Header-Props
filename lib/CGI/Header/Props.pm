@@ -29,12 +29,17 @@ sub normalize {
 
 sub new {
     my $class = shift;
-    bless { header => {}, @_ }, $class;
+
+    bless {
+        handler => 'header',
+        header => {},
+        @_
+    }, $class;
 }
 
 sub handler {
     my $self = shift;
-    return $self->{handler} ||= 'header' unless @_;
+    return $self->{handler} unless @_;
     $self->{handler} = shift;
     $self;
 }
@@ -184,16 +189,26 @@ sub p3p {
 }
 
 sub as_string {
-    my $self = shift;
-    my $handler = $self->handler;
-    $handler eq 'none' ? q{} : $self->query->$handler( $self->{header} );
-}
+    my $self    = shift;
+    my $handler = $self->{handler};
+    my $query   = $self->query;
 
-sub _lc {
-    my $str = lc shift;
-    $str =~ s/^-//;
-    $str =~ tr/-/_/;
-    "-$str";
+    if ( $handler eq 'header' or $handler eq 'redirect' ) {
+        if ( my $method = $query->can($handler) ) {
+            return $query->$method( $self->{header} );
+        }
+        else {
+            croak ref($query) . "is missing '$handler' method";
+        }
+    }
+    elsif ( $handler eq 'none' ) {
+        return q{};
+    }
+    else {
+        croak "Invalid handler '$handler'";
+    }
+
+    return;
 }
 
 1;
