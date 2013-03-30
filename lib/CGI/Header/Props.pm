@@ -16,7 +16,7 @@ our %PROPERTY_ALIAS = (
 );
 
 sub get_alias {
-    $PROPERTY_ALIAS{ $_[0] };
+    $PROPERTY_ALIAS{ $_[1] };
 }
 
 sub normalize {
@@ -24,7 +24,7 @@ sub normalize {
     my $prop = lc shift;
     $prop =~ s/^-//;
     $prop =~ tr/_/-/;
-    $class->get_alias($prop) || $prop;
+    '-' . ($class->get_alias($prop) || $prop);
 }
 
 sub new {
@@ -58,7 +58,7 @@ sub rehash {
     my $header = $self->{header};
 
     for my $key ( keys %{$header} ) {
-        my $prop = '-' . $self->normalize( $key );
+        my $prop = $self->normalize( $key );
         next if $key eq $prop; # $key is normalized
         croak "Property '$prop' already exists" if exists $header->{$prop};
         $header->{$prop} = delete $header->{$key}; # rename $key to $prop
@@ -70,25 +70,25 @@ sub rehash {
 sub get {
     my ( $self, $key ) = @_;
     my $prop = $self->normalize( $key );
-    $self->{header}->{"-$prop"};
+    $self->{header}->{$prop};
 }
 
 sub set {
     my ( $self, $key, $value ) = @_;
     my $prop = $self->normalize( $key );
-    $self->{header}->{"-$prop"} = $value;
+    $self->{header}->{$prop} = $value;
 }
 
 sub exists {
     my ( $self, $key ) = @_;
     my $prop = $self->normalize( $key );
-    exists $self->{header}->{"-$prop"};
+    exists $self->{header}->{$prop};
 }
 
 sub delete {
     my ( $self, $key ) = @_;
     my $prop = $self->normalize( $key );
-    delete $self->{header}->{"-$prop"};
+    delete $self->{header}->{$prop};
 }
 
 sub push_cookie {
