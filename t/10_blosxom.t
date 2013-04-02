@@ -24,8 +24,8 @@ sub start {
 }
 
 sub last {
-    my $props = CGI::Header::Props->new( header => $blosxom::header );
-    $props->set( -content_length => length $blosxom::output );
+    my $props = CGI::Header::Props->new( header => $blosxom::header )->rehash;
+    $props->set( 'Content-Length' => length $blosxom::output );
 }
 
 package main;

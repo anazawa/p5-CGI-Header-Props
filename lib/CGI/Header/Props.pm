@@ -24,7 +24,7 @@ sub normalize {
     my $prop = lc shift;
     $prop =~ s/^-//;
     $prop =~ tr/_/-/;
-    '-' . ($class->get_alias($prop) || $prop);
+    $class->get_alias($prop) || $prop;
 }
 
 sub new {
@@ -98,12 +98,12 @@ sub delete {
 
 sub push_cookie {
     my $self = shift;
-    $self->_push( '-cookie', @_ );
+    $self->_push( 'cookie', @_ );
 }
 
 sub push_p3p {
     my $self = shift;
-    $self->_push( '-p3p', @_ );
+    $self->_push( 'p3p', @_ );
 }
 
 sub _push {
@@ -130,7 +130,7 @@ sub clear {
 }
 
 BEGIN {
-    my @methods = qw(
+    my @props = qw(
         attachment
         charset
         expires
@@ -141,8 +141,7 @@ BEGIN {
         type
     );
 
-    for my $method ( @methods ) {
-        my $prop = "-$method";
+    for my $prop ( @props ) {
         my $code = sub {
             my $self = shift;
             return $self->{header}->{$prop} unless @_;
@@ -151,7 +150,7 @@ BEGIN {
         };
 
         no strict 'refs';
-        *{$method} = $code;
+        *{$prop} = $code;
     }
 }
 
@@ -159,9 +158,9 @@ sub cookie {
     my $self = shift;
 
     if ( @_ ) {
-        $self->{header}->{-cookie} = @_ > 1 ? [ @_ ] : shift;
+        $self->{header}->{cookie} = @_ > 1 ? [ @_ ] : shift;
     }
-    elsif ( my $cookie = $self->{header}->{-cookie} ) {
+    elsif ( my $cookie = $self->{header}->{cookie} ) {
         return ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
     }
     else {
@@ -175,9 +174,9 @@ sub p3p {
     my $self = shift;
 
     if ( @_ ) {
-        $self->{header}->{-p3p} = @_ > 1 ? [ @_ ] : shift;
+        $self->{header}->{p3p} = @_ > 1 ? [ @_ ] : shift;
     }
-    elsif ( my $tags = $self->{header}->{-p3p} ) {
+    elsif ( my $tags = $self->{header}->{p3p} ) {
         my @tags = ref $tags eq 'ARRAY' ? @{$tags} : $tags;
         return map { split ' ', $_ } @tags;
     }

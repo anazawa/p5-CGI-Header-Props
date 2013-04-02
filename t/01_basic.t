@@ -36,14 +36,14 @@ isa_ok $props->header, 'HASH';
 is $props->handler, 'header';
 
 my @data = (
-    '-foo'           => '-foo',
-    'Foo'            => '-foo',
-    '-foo_bar'       => '-foo-bar',
-    'Foo-Bar'        => '-foo-bar',
-    '-cookies'       => '-cookie',
-    '-set_cookie'    => '-cookie',
-    '-window_target' => '-target',
-    '-content_type'  => '-type',
+    '-foo'           => 'foo',
+    'Foo'            => 'foo',
+    '-foo_bar'       => 'foo-bar',
+    'Foo-Bar'        => 'foo-bar',
+    '-cookies'       => 'cookie',
+    '-set_cookie'    => 'cookie',
+    '-window_target' => 'target',
+    '-content_type'  => 'type',
 );
 
 while ( my ($input, $expected) = splice @data, 0, 2 ) {
@@ -59,7 +59,7 @@ $props->clear->set( uri => 'http://www.example.com/' );
 is $props->handler('redirect'), $props;
 is $props->handler, 'redirect';
 is_deeply $props->header,
-    { -location => 'http://www.example.com/' }, 'should be rehashed';
+    { location => 'http://www.example.com/' }, 'should be rehashed';
 
 #throws_ok { $props->handler('param') } qr{Invalid handler};
 
@@ -74,13 +74,13 @@ is_deeply $props->header,
 );
 
 is_deeply $props->rehash->header, {
-    -type    => 'text/plain',
-    -charset => 'utf-8',
-    -cookie  => 'ID=123456; path=/',
-    -expires => '+3d',
-    -foo     => 'bar',
-    '-foo-bar' => 'baz',
-    -target  => 'ResultsWindow',
+    type    => 'text/plain',
+    charset => 'utf-8',
+    cookie  => 'ID=123456; path=/',
+    expires => '+3d',
+    foo     => 'bar',
+    'foo-bar' => 'baz',
+    target  => 'ResultsWindow',
 };
 
 is $props->clear->handler('header')->as_string,
