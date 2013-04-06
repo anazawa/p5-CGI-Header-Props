@@ -265,6 +265,15 @@ This document refers to CGI::Header::Props version 0.01.
 =head1 DESCRIPTION
 
 This module helps you handle CGI.pm-compatible HTTP header properties.
+Instances of CGI.pm-based application often hold those properties.
+CGI.pm's C<header> or C<redirect> method is used to convert the header
+property into CGI response headers.
+
+This module is inspired by how L<CGI::Application> handles the header
+property. The framework has C<header_props> attribute. C<header_add>
+method can be used to update C<header_props>. C<header_type> represents
+which method of CGI.pm (C<header> or C<redirect>) stringifies C<header_props>
+when C<run> is invoked.
 
 =head1 METHODS
 
@@ -284,14 +293,13 @@ object. This attribute defaults to a reference to an empty hash.
 Returns the query object associated with this C<CGI::Header::Props> object.
 This attribute defaults to the Singleton instance of CGI.pm (C<$CGI::Q>).
 
-=item $props->handler
+=item $self = $props->handler('redirect')
 
 Works like L<CGI::Application>'s C<header_type()> method.
 This method can be used to declare that you are setting a redirection
 header. This attribute defaults to C<header>.
 
-  $props->handler('redirect');
-  $props->as_string; # invokes $props->query->redirect
+  $props->hadnler('redirect')->as_string; # invokes $props->query->redirect
 
 =item $self = $props->rehash
 
