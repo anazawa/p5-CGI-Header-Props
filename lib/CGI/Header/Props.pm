@@ -182,7 +182,7 @@ sub p3p {
     $self;
 }
 
-sub to_string {
+sub as_string {
     my $self    = shift;
     my $handler = $self->{handler};
     my $query   = $self->query;
