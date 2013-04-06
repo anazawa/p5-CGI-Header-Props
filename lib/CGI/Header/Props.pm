@@ -6,7 +6,7 @@ use Carp qw/croak/;
 
 our $VERSION = '0.01';
 
-my %Property_Alias = (
+my %Alias = (
     'content-type'  => 'type',
     'cookies'       => 'cookie',
     'set-cookie'    => 'cookie',
@@ -54,7 +54,7 @@ sub rehash {
         my $prop = lc $key;
            $prop =~ s/^-//;
            $prop =~ tr/_/-/;
-           $prop = $Property_Alias{$prop} || $prop;
+           $prop = $Alias{$prop} || $prop;
 
         next if $key eq $prop; # $key is normalized
 
@@ -182,7 +182,7 @@ sub p3p {
     $self;
 }
 
-sub as_string {
+sub to_string {
     my $self    = shift;
     my $handler = $self->{handler};
     my $query   = $self->query;
