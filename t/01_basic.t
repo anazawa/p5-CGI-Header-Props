@@ -2,7 +2,7 @@ use strict;
 use CGI;
 use CGI::Header::Props;
 use Test::Exception;
-use Test::More tests => 57;
+use Test::More tests => 49;
 
 my $props = CGI::Header::Props->new(
     query => CGI->new,
@@ -16,7 +16,7 @@ my $props = CGI::Header::Props->new(
 isa_ok $props, 'CGI::Header::Props';
 
 # class methods
-can_ok $props, qw( new normalize );
+can_ok $props, qw( new );
 
 # attributes
 can_ok $props, qw( header query _build_query handler );
@@ -35,27 +35,12 @@ isa_ok $props->query, 'CGI';
 isa_ok $props->header, 'HASH';
 is $props->handler, 'header';
 
-my @data = (
-    '-foo'           => 'foo',
-    'Foo'            => 'foo',
-    '-foo_bar'       => 'foo-bar',
-    'Foo-Bar'        => 'foo-bar',
-    '-cookies'       => 'cookie',
-    '-set_cookie'    => 'cookie',
-    '-window_target' => 'target',
-    '-content_type'  => 'type',
-);
+is $props->set( Foo => 'bar' ), 'bar';
+is $props->get('Foo'), 'bar';
+ok $props->exists('Foo');
+is $props->delete('Foo'), 'bar';
 
-while ( my ($input, $expected) = splice @data, 0, 2 ) {
-    is $props->normalize($input), $expected;
-}
-
-is $props->set( foo => 'bar' ), 'bar';
-is $props->get('foo'), 'bar';
-ok $props->exists('foo');
-is $props->delete('foo'), 'bar';
-
-$props->clear->set( uri => 'http://www.example.com/' );
+$props->clear->set( Location => 'http://www.example.com/' );
 is $props->handler('redirect'), $props;
 is $props->handler, 'redirect';
 is_deeply $props->header,

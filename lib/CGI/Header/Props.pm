@@ -6,7 +6,7 @@ use Carp qw/croak/;
 
 our $VERSION = '0.01';
 
-our %PROPERTY_ALIAS = (
+my %Property_Alias = (
     'content-type'  => 'type',
     'cookies'       => 'cookie',
     'set-cookie'    => 'cookie',
@@ -14,18 +14,6 @@ our %PROPERTY_ALIAS = (
     'url'           => 'location',
     'window-target' => 'target',
 );
-
-sub get_alias {
-    $PROPERTY_ALIAS{ $_[1] };
-}
-
-sub normalize {
-    my $class = shift;
-    my $prop = lc shift;
-    $prop =~ s/^-//;
-    $prop =~ tr/_/-/;
-    $class->get_alias($prop) || $prop;
-}
 
 sub new {
     my $class = shift;
@@ -63,9 +51,16 @@ sub rehash {
     my $header = $self->{header};
 
     for my $key ( keys %{$header} ) {
-        my $prop = $self->normalize( $key );
+        my $prop = lc $key;
+           $prop =~ s/^-//;
+           $prop =~ tr/_/-/;
+           $prop = $Property_Alias{$prop} || $prop;
+
         next if $key eq $prop; # $key is normalized
+
+        # $key and $prop refer to the same property
         croak "Property '$prop' already exists" if exists $header->{$prop};
+
         $header->{$prop} = delete $header->{$key}; # rename $key to $prop
     }
 
@@ -74,25 +69,24 @@ sub rehash {
 
 sub get {
     my ( $self, $key ) = @_;
-    my $prop = $self->normalize( $key );
-    $self->{header}->{$prop};
+    $self->{header}->{lc $key};
 }
 
 sub set {
     my ( $self, $key, $value ) = @_;
-    my $prop = $self->normalize( $key );
+    my $prop = lc $key;
     $self->{header}->{$prop} = $value;
 }
 
 sub exists {
     my ( $self, $key ) = @_;
-    my $prop = $self->normalize( $key );
+    my $prop = lc $key;
     exists $self->{header}->{$prop};
 }
 
 sub delete {
     my ( $self, $key ) = @_;
-    my $prop = $self->normalize( $key );
+    my $prop = lc $key;
     delete $self->{header}->{$prop};
 }
 
@@ -197,7 +191,7 @@ sub as_string {
             return $query->$method( $self->{header} );
         }
         else {
-            croak ref($query) . "is missing '$handler' method";
+            croak ref($query) . " is missing '$handler' method";
         }
     }
     elsif ( $handler eq 'none' ) {
@@ -227,8 +221,8 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
 
   # CGI.pm-compatibe HTTP header properties
   my $header = {
-      -type    => 'text/html',
-      -charset => 'utf-8'
+      type    => 'text/html',
+      charset => 'utf-8'
   };
 
   my $props = CGI::Header::Props->new(
@@ -238,18 +232,20 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
   );
 
   # inspect $header
-  $props->get('type'); # => "text/plain"
-  $props->exists('type'); # => true
+  $props->get('Content-Length'); # => 3002
+  $props->exists('Content-Length'); # => true
 
   # update $header 
-  $props->set( type => 'text/plain' ); # overwrite
-  $props->delete('type'); # => "text/plain"
+  $props->set( 'Content-Length' => 3002 ); # overwrite
+  $props->delete('Content-Length'); # => 3002
   $props->clear; # => $self
 
   $props->handler('redirect');
   $props->as_string; # invokes $query->redirect
 
   # convenience methods
+  $props->type('text/plain');
+  $props->charset('utf-8'); 
   $props->p3p(qw/CAO DSP LAW CURa/);
   $props->expires('+3d');
   $props->nph(1);
