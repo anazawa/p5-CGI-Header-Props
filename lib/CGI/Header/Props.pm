@@ -68,26 +68,27 @@ sub rehash {
 }
 
 sub get {
-    my ( $self, $key ) = @_;
-    $self->{header}->{lc $key};
+    my $self = shift;
+    my $field = lc shift;
+    $self->{header}->{$field};
 }
 
 sub set {
-    my ( $self, $key, $value ) = @_;
-    my $prop = lc $key;
-    $self->{header}->{$prop} = $value;
+    my $self = shift;
+    my $field = lc shift;
+    $self->{header}->{$field} = shift;
 }
 
 sub exists {
-    my ( $self, $key ) = @_;
-    my $prop = lc $key;
-    exists $self->{header}->{$prop};
+    my $self = shift;
+    my $field = lc shift;
+    exists $self->{header}->{$field};
 }
 
 sub delete {
-    my ( $self, $key ) = @_;
-    my $prop = lc $key;
-    delete $self->{header}->{$prop};
+    my $self = shift;
+    my $field = lc shift;
+    delete $self->{header}->{$field};
 }
 
 sub push_cookie {
@@ -240,18 +241,22 @@ CGI::Header::Props - handle CGI.pm-compatible HTTP header properties
   $props->delete('Content-Length'); # => 3002
   $props->clear; # => $self
 
-  $props->handler('redirect');
-  $props->as_string; # invokes $query->redirect
-
   # convenience methods
-  $props->type('text/plain');
+  $props->attachment('genome.jpg');
   $props->charset('utf-8'); 
-  $props->p3p(qw/CAO DSP LAW CURa/);
+  $props->cookie( @cookies ); # @cookies are CGI::Cookie objects
   $props->expires('+3d');
+  $props->location('http://somewhere.else/in/movie/land');
   $props->nph(1);
-  $props->push_cookie( @cookies ); # @cookies are CGI::Cookie objects
+  $props->p3p(qw/CAO DSP LAW CURa/);
+  $props->status('301 Moved Permanently');
+  $props->type('image/gif');
 
   $props->header; # same reference as $header
+
+  # stringify $header
+  $props->handler('redirect');
+  $props->as_string; # invokes $query->redirect
 
 =head1 VERSION
 
@@ -260,11 +265,6 @@ This document refers to CGI::Header::Props version 0.01.
 =head1 DESCRIPTION
 
 This module helps you handle CGI.pm-compatible HTTP header properties.
-
-Unlike L<CGI::Header>, this module focuses on manipulating
-the header property itself. If you're familiar with L<CGI::Application>'s
-C<header_add()>, C<header_props()> or C<header_type()> method, you can use
-this module easily.
 
 =head1 METHODS
 
@@ -325,34 +325,23 @@ Normalized property names are:
 
 =item 1. lowercased
 
-  'Content-Length' -> 'content-length'
+  'Content_Type' -> 'content_type'
 
-=item 2. start with a dash
+=item 2. use dashes instead of underscores except for the first character
 
-  'content-length' -> '-content-length'
-
-=item 3. use underscores instead of dashes except for the first character
-
-  'content-length' -> '-content_length'
+  'content_type' -> 'content-type'
 
 =back
 
 CGI.pm's C<header()> method also accepts aliases of property names.
 This module converts them as follows:
 
-  # for CGI#header
-  '-content_type'  -> '-type'
-  '-cookies'       -> '-cookie'
-  '-set_cookie'    -> '-cookie'
-  '-window_target' -> '-target'
-
-  # for CGI#redirect
-  '-content_type'  -> '-type'
-  '-cookies'       -> '-cookie'
-  '-set_cookie'    -> '-cookie'
-  '-uri'           -> '-location'
-  '-url'           -> '-location'
-  '-window_target' -> '-target'
+  'content-type'  -> 'type'
+  'cookies'       -> 'cookie'
+  'set-cookie'    -> 'cookie'
+  'uri'           -> 'location'
+  'url'           -> 'location'
+  'window-target' -> 'target'
 
 If a property name is duplicated, throws an exception:
 
@@ -362,36 +351,30 @@ If a property name is duplicated, throws an exception:
   #     Content_Type => 'text/html',
   # }
 
-  $props->rehash; # die "Property "-type' already exists"
+  $props->rehash; # die "Property "type' already exists"
 
-=item $value = $props->get( $prop )
+=item $value = $props->get( $field )
 
-=item $value = $props->set( $prop => $value )
+=item $value = $props->set( $field => $value )
 
-Get or set the value of the header property.
-The property name (C<$prop>) is not case sensitive.
-You can use dashes as a replacement for underscores in property names.
+Get or set the value of the header field.
+The field name (C<$field>) is not case sensitive.
 
-  $props->get('content_length');
+  $props->get('content-length');
   $props->get('Content-Length');
 
-The C<$value> argument may be a plain string or a reference to an array
-of L<CGI::Cookie> objects for the C<cookie> property:
+The C<$value> argument must be a plain string:
 
   $props->set( 'Content-Length' => 3002 );
   my $length = $props->get('Content-Length'); # => 3002
 
-  # $cookie1 and $cookie2 are CGI::Cookie objects
-  $props->set( cookie => [$cookie1, $cookie2] );
-  my $cookies = $props->get('cookie'); # => [$cookie1, $cookie2]
+=item $value = $props->delete( $field )
 
-=item $value = $props->delete( $prop )
-
-Deletes the specified property. Returns the value of the deleted property.
+Deletes the specified field. Returns the value of the deleted field.
 
   my $value = $props->delete('Content-Disposition'); # => "inline"
 
-=item $bool = $props->exists( $prop )
+=item $bool = $props->exists( $field )
 
 Returns a Boolean value telling whether the specified property exists.
 
@@ -408,7 +391,7 @@ This will remove all header properties. Returns this object itself.
 Stringifies the header props. associated with this object.
 The header props. will be passed to CGI.pm's C<header()> or C<redirect()>
 method (It depends on the return value of C<< $props->handler >>).
-It's identicalt to:
+It's identical to:
 
   my $handler = $props->handler; # => "header" or "redirect"
   $props->query->$handler( $props->header );
@@ -505,13 +488,6 @@ If set to a true value, will issue the correct headers to work with
 a NPH (no-parse-header) script.
 
   $props->nph(1);
-
-NOTE: If the C<-nph> pragma is enabled, you can't set this property to
-a false value.
-
-  if ( $props->query->nph ) { # <=> "use CGI '-nph';"
-      $props->nph(0); # die "The '-nph' pragma is enabled'
-  }
 
 =item $self = $props->p3p( @tags )
 

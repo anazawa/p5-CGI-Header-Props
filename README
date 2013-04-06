@@ -9,8 +9,8 @@ SYNOPSIS
 
       # CGI.pm-compatibe HTTP header properties
       my $header = {
-          -type    => 'text/html',
-          -charset => 'utf-8'
+          type    => 'text/html',
+          charset => 'utf-8'
       };
 
       my $props = CGI::Header::Props->new(
@@ -20,35 +20,36 @@ SYNOPSIS
       );
 
       # inspect $header
-      $props->get('type'); # => "text/plain"
-      $props->exists('type'); # => true
+      $props->get('Content-Length'); # => 3002
+      $props->exists('Content-Length'); # => true
 
       # update $header 
-      $props->set( type => 'text/plain' ); # overwrite
-      $props->delete('type'); # => "text/plain"
+      $props->set( 'Content-Length' => 3002 ); # overwrite
+      $props->delete('Content-Length'); # => 3002
       $props->clear; # => $self
 
-      $props->handler('redirect');
-      $props->as_string; # invokes $query->redirect
-
       # convenience methods
-      $props->p3p(qw/CAO DSP LAW CURa/);
+      $props->attachment('genome.jpg');
+      $props->charset('utf-8'); 
+      $props->cookie( @cookies ); # @cookies are CGI::Cookie objects
       $props->expires('+3d');
+      $props->location('http://somewhere.else/in/movie/land');
       $props->nph(1);
-      $props->push_cookie( @cookies ); # @cookies are CGI::Cookie objects
+      $props->p3p(qw/CAO DSP LAW CURa/);
+      $props->status('301 Moved Permanently');
+      $props->type('image/gif');
 
       $props->header; # same reference as $header
 
+      # stringify $header
+      $props->handler('redirect');
+      $props->as_string; # invokes $query->redirect
+
 VERSION
-    This document refers to CGI::Header::Props version 0.01.
+    This document refers to CGI::Header::Props version 0.02.
 
 DESCRIPTION
     This module helps you handle CGI.pm-compatible HTTP header properties.
-
-    Unlike CGI::Header, this module focuses on manipulating the header
-    property itself. If you're familiar with CGI::Application's
-    "header_add()", "header_props()" or "header_type()" method, you can use
-    this module easily.
 
 METHODS
     $props = CGI::Header::Props->new
@@ -100,30 +101,20 @@ METHODS
         Normalized property names are:
 
         1. lowercased
-              'Content-Length' -> 'content-length'
+              'Content_Type' -> 'content_type'
 
-        2. start with a dash
-              'content-length' -> '-content-length'
-
-        3. use underscores instead of dashes except for the first character
-              'content-length' -> '-content_length'
+        2. use dashes instead of underscores except for the first character
+              'content_type' -> 'content-type'
 
         CGI.pm's "header()" method also accepts aliases of property names.
         This module converts them as follows:
 
-          # for CGI#header
-          '-content_type'  -> '-type'
-          '-cookies'       -> '-cookie'
-          '-set_cookie'    -> '-cookie'
-          '-window_target' -> '-target'
-
-          # for CGI#redirect
-          '-content_type'  -> '-type'
-          '-cookies'       -> '-cookie'
-          '-set_cookie'    -> '-cookie'
-          '-uri'           -> '-location'
-          '-url'           -> '-location'
-          '-window_target' -> '-target'
+          'content-type'  -> 'type'
+          'cookies'       -> 'cookie'
+          'set-cookie'    -> 'cookie'
+          'uri'           -> 'location'
+          'url'           -> 'location'
+          'window-target' -> 'target'
 
         If a property name is duplicated, throws an exception:
 
@@ -133,34 +124,27 @@ METHODS
           #     Content_Type => 'text/html',
           # }
 
-          $props->rehash; # die "Property "-type' already exists"
+          $props->rehash; # die "Property "type' already exists"
 
-    $value = $props->get( $prop )
-    $value = $props->set( $prop => $value )
-        Get or set the value of the header property. The property name
-        ($prop) is not case sensitive. You can use dashes as a replacement
-        for underscores in property names.
+    $value = $props->get( $field )
+    $value = $props->set( $field => $value )
+        Get or set the value of the header field. The field name ($field) is
+        not case sensitive.
 
-          $props->get('content_length');
+          $props->get('content-length');
           $props->get('Content-Length');
 
-        The $value argument may be a plain string or a reference to an array
-        of CGI::Cookie objects for the "cookie" property:
+        The $value argument must be a plain string:
 
           $props->set( 'Content-Length' => 3002 );
           my $length = $props->get('Content-Length'); # => 3002
 
-          # $cookie1 and $cookie2 are CGI::Cookie objects
-          $props->set( cookie => [$cookie1, $cookie2] );
-          my $cookies = $props->get('cookie'); # => [$cookie1, $cookie2]
-
-    $value = $props->delete( $prop )
-        Deletes the specified property. Returns the value of the deleted
-        property.
+    $value = $props->delete( $field )
+        Deletes the specified field. Returns the value of the deleted field.
 
           my $value = $props->delete('Content-Disposition'); # => "inline"
 
-    $bool = $props->exists( $prop )
+    $bool = $props->exists( $field )
         Returns a Boolean value telling whether the specified property
         exists.
 
@@ -175,7 +159,7 @@ METHODS
         Stringifies the header props. associated with this object. The
         header props. will be passed to CGI.pm's "header()" or "redirect()"
         method (It depends on the return value of "$props->handler"). It's
-        identicalt to:
+        identical to:
 
           my $handler = $props->handler; # => "header" or "redirect"
           $props->query->$handler( $props->header );
@@ -252,13 +236,6 @@ METHODS
         the correct headers to work with a NPH (no-parse-header) script.
 
           $props->nph(1);
-
-        NOTE: If the "-nph" pragma is enabled, you can't set this property
-        to a false value.
-
-          if ( $props->query->nph ) { # <=> "use CGI '-nph';"
-              $props->nph(0); # die "The '-nph' pragma is enabled'
-          }
 
     $self = $props->p3p( @tags )
     @tags = $props->p3p
