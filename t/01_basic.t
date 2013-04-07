@@ -29,7 +29,7 @@ can_ok $props,
 can_ok $props, qw( get set delete exists push_cookie push_p3p );
 
 # etc.
-can_ok $props, qw( as_string rehash );
+can_ok $props, qw( to_string rehash );
 
 isa_ok $props->query, 'CGI';
 isa_ok $props->header, 'HASH';
@@ -68,16 +68,22 @@ is_deeply $props->rehash->header, {
     target  => 'ResultsWindow',
 };
 
-is $props->clear->handler('header')->as_string,
+is $props->clear->handler('header')->to_string,
     "Content-Type: text/html; charset=ISO-8859-1$CGI::CRLF$CGI::CRLF";
 
-is $props->clear->handler('redirect')->as_string,
+is $props->clear->handler('redirect')->to_string,
     "Status: 302 Found$CGI::CRLF" .
     "Location: http://localhost$CGI::CRLF$CGI::CRLF";
 
-is $props->handler('none')->as_string, q{};
+is $props->handler('none')->to_string, q{};
 
-throws_ok { $props->handler('param')->as_string } qr{Invalid handler};
+throws_ok { $props->handler('param')->to_string } qr{Invalid handler};
+
+is_deeply $props->handler('header')->to_hash,
+    { 'Content-Type' => 'text/html; charset=ISO-8859-1' };
+
+is_deeply $props->handler('redirect')->to_hash,
+    { 'Status' => '302 Found', 'Location' => 'http://localhost' };
 
 
 # nph

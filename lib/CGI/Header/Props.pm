@@ -182,7 +182,58 @@ sub p3p {
     $self;
 }
 
-sub as_string {
+sub to_hash {
+    my $self  = shift;
+    my $query = $self->query;
+    my %hash  = %{ $self->{header} };
+
+    require CGI::Util;
+
+    if ( $self->{handler} eq 'redirect' ) {
+        $hash{location} = $query->self_url if !$hash{location};
+        $hash{status}   = '302 Found' if !defined $hash{status};
+        $hash{type}     = q{} if !exists $hash{type};
+    }
+
+    my ( $attachment, $charset, $cookie, $expires, $nph, $p3p, $status, $target, $type )
+        = delete @hash{qw/attachment charset cookie expires nph p3p status target type/};
+
+    # "foo-bar" -> "Foo-bar"
+    %hash = map { ucfirst $_, delete $hash{$_} } keys %hash;
+
+    $hash{'Server'}        = $query->server_software if $nph or $query->nph;
+    $hash{'Status'}        = $status if $status;
+    $hash{'Window-Target'} = $target if $target;
+
+    if ( $p3p ) {
+        my $tags = ref $p3p eq 'ARRAY' ? join ' ', @{$p3p} : $p3p;
+        $hash{'P3P'} = qq{policyref="/w3c/p3p.xml", CP="$tags"};
+    }
+
+    if ( $cookie ) {
+        my @cookies = ref $cookie eq 'ARRAY' ? @{$cookie} : $cookie;
+        $hash{'Set-Cookie'} = join ', ', @cookies;
+    }
+
+    $hash{'Expires'} = CGI::Util::expires($expires) if $expires;
+    $hash{'Date'}    = CGI::Util::expires() if $expires or $cookie or $nph;
+    $hash{'Pragma'}  = 'no-cache' if $query->cache;
+
+    if ( $attachment ) {
+        $hash{'Content-Disposition'} = qq{attachment; filename="$attachment"};
+    }
+
+    if ( !defined $type or $type ne q{} ) {
+        $charset = $query->charset unless defined $charset;
+        my $ct = $type || 'text/html';
+        $ct .= "; charset=$charset" if $charset && $ct !~ /\bcharset\b/;
+        $hash{'Content-Type'} = $ct;
+    }
+
+    \%hash;
+}
+
+sub to_string {
     my $self    = shift;
     my $handler = $self->{handler};
     my $query   = $self->query;
