@@ -57,10 +57,7 @@ sub rehash {
            $prop = $Alias{$prop} || $prop;
 
         next if $key eq $prop; # $key is normalized
-
-        # $key and $prop refer to the same property
         croak "Property '$prop' already exists" if exists $header->{$prop};
-
         $header->{$prop} = delete $header->{$key}; # rename $key to $prop
     }
 
@@ -112,10 +109,6 @@ sub _push {
     $self->{header}->{$prop} = @values > 1 ? \@values : $values[0];
 
     scalar @values;
-}
-
-sub flatten {
-    %{ $_[0]->{header} };
 }
 
 sub clear {
